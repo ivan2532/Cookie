@@ -30,7 +30,7 @@ inline static size_t align(size_t size)
 }
 
 // Get a block of needed size from a free block and leave the rest free. Needed size includes the descriptor size.
-static Block* splitFreeBlock(Block* block, size_t neededSize)
+static Block* splitFreeBlockAndUpdateFreeList(Block* block, size_t neededSize)
 {
     if(neededSize % MEM_BLOCK_SIZE != 0 || neededSize > block->size)
     {
@@ -45,8 +45,13 @@ static Block* splitFreeBlock(Block* block, size_t neededSize)
     void* leftoverBlockAddress = (void*)block + neededSize;
     Block* leftoverBlock = (Block*)leftoverBlockAddress;
     leftoverBlock->size = block->size - neededSize;
-    leftoverBlock->prev = block;
+    leftoverBlock->prev = block->prev;
     leftoverBlock->next = block->next;
+
+    if(block == freeBlocksList)
+    {
+        freeBlocksList = leftoverBlock;
+    }
 
     block->size = neededSize;
     block->next = leftoverBlock;
@@ -84,6 +89,11 @@ static Block* mergeBlocks(Block* parent, Block* child)
     parent->size += child->size;
     parent->next = child->next;
 
+    if(child->next)
+    {
+        child->next->prev = parent;
+    }
+
     return parent;
 }
 
@@ -109,11 +119,12 @@ void* kernel_alloc(size_t size)
     Block* blockToAllocate = firstFit(size);
     if(blockToAllocate == 0)
     {
+        //Out of memory
         return 0;
     }
 
-    // Leave the rest of the block that we don't need free
-    blockToAllocate = splitFreeBlock(blockToAllocate, size);
+    // Leave the rest of the block that we don't need free and update the list of free blocks
+    blockToAllocate = splitFreeBlockAndUpdateFreeList(blockToAllocate, size);
 
     // Remove the allocated block from the list
     if(blockToAllocate->prev != 0)
@@ -125,6 +136,9 @@ void* kernel_alloc(size_t size)
         blockToAllocate->next->prev = blockToAllocate->prev;
     }
 
+    blockToAllocate->prev = 0;
+    blockToAllocate->next = 0;
+
     // Return the actual memory pointer after the descriptor
     return (void*)blockToAllocate + sizeof(Block);
 }
@@ -135,11 +149,43 @@ int kernel_free(void* ptr)
     // Get the descriptor of the allocated block
     Block* descriptor = (Block*)(ptr - sizeof(Block));
 
+    // Find where to insert the block in the list
+    Block* iterator = freeBlocksList;
+
+    while(iterator < descriptor)
+    {
+        // Case where the block to free is the last block
+        if(iterator->next == 0)
+        {
+            iterator->next = descriptor;
+            break;
+        }
+
+        iterator = iterator->next;
+    }
+
+    if(iterator > descriptor)
+    {
+        descriptor->next = iterator;
+        descriptor->prev = iterator->prev;
+
+        if(iterator->prev)
+        {
+            iterator->prev->next = descriptor;
+        }
+        else
+        {
+            freeBlocksList = descriptor;
+        }
+
+        iterator->prev = descriptor;
+    }
+
     // Merge with the block before and after if possible
     Block* blockToMergeWith = descriptor;
 
     // Check if the previous block ends where the current starts
-    if(descriptor->prev && (void*)descriptor->prev + descriptor->size == (void*)descriptor)
+    if(descriptor->prev && (void*)descriptor->prev + descriptor->prev->size == (void*)descriptor)
     {
         blockToMergeWith = descriptor->prev;
         // If the previous block "eats" the current, then we want to merge the next block with the previous block
@@ -151,11 +197,6 @@ int kernel_free(void* ptr)
     {
         mergeBlocks(blockToMergeWith, descriptor->next);
     }
-
-    // We can just add the final merged block as the first element of
-    // the list because the order is not important, it's faster this way
-    blockToMergeWith = freeBlocksList;
-    freeBlocksList = blockToMergeWith;
 
     return 0;
 }

@@ -3,7 +3,7 @@
 
 .align 4
 supervisorTrap:
-    addi sp, sp, -248
+    addi sp, sp, -232
 
     # Save all registers on stack except x0, x10 and x11
     # x0 is wired to 0, x10 and x11 are used to get system call return values
@@ -72,6 +72,6 @@ supervisorTrap:
     ld x30, 0xD8(sp)
     ld x31, 0xE0(sp)
 
-    addi sp, sp, 248
+    addi sp, sp, 232
 
     sret

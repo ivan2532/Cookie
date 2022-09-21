@@ -1,2 +1,9 @@
 #Directories
 .idea/
+
+#Files
+kernel
+kernel.asm
+*.d
+*.lst
+*.o
