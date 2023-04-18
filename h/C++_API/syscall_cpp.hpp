@@ -25,9 +25,12 @@ public:
 protected:
     Thread ();
     virtual void run () {}
+
+    const uint32 SYSTEM_STACK_SIZE = 512;
 private:
     thread_t myHandle;
     char* myStack;
+    char* systemStack;
     ContextBuffer myContext;
 
     static Thread* runningThread;

@@ -5,7 +5,7 @@
 #ifndef __Scheduler__
 #define __Scheduler__
 
-#include "Queue.h"
+#include "Queue.hpp"
 
 class Thread;
 

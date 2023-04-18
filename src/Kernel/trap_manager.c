@@ -1,4 +1,4 @@
-#include "kernel_syscall.h"
+#include "../../h/Kernel/kernel_syscall.h"
 #include "../../lib/console.h"
 
 // Refrence to the assembly function to set as the trap

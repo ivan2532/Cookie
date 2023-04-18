@@ -1,7 +1,7 @@
-#include "../lib/console.h"
-#include "C++_API/syscall_cpp.h"
+#include "../../lib/console.h"
+#include "../../h/C++_API/syscall_cpp.hpp"
 
-#include "Kernel/Queue.h"
+#include "../../h/Kernel/Queue.hpp"
 
 extern "C" void setTrap();
 

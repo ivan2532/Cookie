@@ -1,5 +1,5 @@
 /*
-    C API wrapper to system calls
+    C API wrapper for system calls
 */
 
 #ifndef syscall_c
@@ -13,10 +13,10 @@ extern "C"
 #endif // __cplusplus
 
 // Allocate a memory block of "size" bytes on the heap.
-void* __mem_alloc(size_t size);
+void* mem_alloc(size_t size);
 
 // Free memory allocated by __mem_alloc
-int __mem_free(void* ptr);
+int mem_free(void* ptr);
 
 #endif // syscall_c
 

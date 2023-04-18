@@ -6,10 +6,10 @@
     we call the internal kernel functions.
 */
 
-#include "syscall_c.h"
+#include "../../h/C_API/syscall_c.h"
 
 // Allocate a memory block of "size" bytes on the heap.
-void* __mem_alloc(size_t size)
+void* mem_alloc(size_t size)
 {
     // Store arguments starting from A1
     __asm__ volatile ("mv a1, %[inSize]" : : [inSize] "r" (size));
@@ -28,7 +28,7 @@ void* __mem_alloc(size_t size)
 }
 
 // Free memory allocated by __mem_alloc
-int __mem_free(void* ptr)
+int mem_free(void* ptr)
 {
     // Store arguments starting from A1
     __asm__ volatile ("mv a1, %[inPtr]" : : [inPtr] "r" (ptr));

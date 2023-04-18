@@ -1,13 +1,25 @@
-#include "syscall_cpp.h"
-
-Thread* Thread::runningThread = nullptr;
+#include "../../h/C++_API/syscall_cpp.hpp"
 
 void* operator new (size_t size)
 {
-    return __mem_alloc(size);
+    return mem_alloc(size);
 }
 
 void operator delete (void* ptr)
 {
-    __mem_free(ptr);
+    mem_free(ptr);
+}
+
+Thread* Thread::runningThread = nullptr;
+
+Thread::Thread()
+{
+    //myStack = new char[DEFAULT_STACK_SIZE];
+    //systemStack = new char[SYSTEM_STACK_SIZE];
+}
+
+Thread::~Thread()
+{
+    //delete[] myStack;
+    //delete[] systemStack;
 }
