@@ -6,7 +6,9 @@
 typedef unsigned int  thread_t;
 
 void* operator new (size_t size);
+void* operator new[] (size_t size);
 void operator delete (void* ptr);
+void operator delete[] (void* ptr);
 
 struct ContextBuffer
 {
