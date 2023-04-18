@@ -2,8 +2,8 @@
     Basic FIFO scheduler
 */
 
-#ifndef __Scheduler__
-#define __Scheduler__
+#ifndef _Scheduler_hpp_
+#define _Scheduler_hpp_
 
 #include "Queue.hpp"
 
@@ -44,4 +44,4 @@ private:
 
 Scheduler* Scheduler::m_Instance = nullptr;
 
-#endif //__Scheduler__
+#endif //_Scheduler_hpp_

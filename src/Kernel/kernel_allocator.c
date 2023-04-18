@@ -1,7 +1,7 @@
-/*
-    Kernel implementation of heap memory allocation
-    Helper funcitons marked as static to limit their linking to this translation unit
-*/
+//
+// Kernel implementation of heap memory allocation
+// Helper funcitons marked as static to limit their linking to this translation unit
+//
 
 #include "../../lib/hw.h"
 

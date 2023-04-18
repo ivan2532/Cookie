@@ -1,5 +1,5 @@
-#ifndef __KernelQueue__
-#define __KernelQueue__
+#ifndef _Queue_hpp_
+#define _Queue_hpp_
 
 #include "../../lib/hw.h"
 
@@ -72,4 +72,4 @@ private:
 };
 
 
-#endif //__KernelQueue__
+#endif //_Queue_hpp_

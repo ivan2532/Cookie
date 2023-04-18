@@ -1,5 +1,5 @@
-#ifndef _syscall_cpp
-#define _syscall_cpp
+#ifndef _syscall_cpp_
+#define _syscall_cpp_
 
 #include "../C_API/syscall_c.h"
 

@@ -2,8 +2,8 @@
     Declarations of internal kernel functions
 */
 
-#ifndef kernel_syscall
-#define kernel_syscall
+#ifndef _kernel_syscall_h_
+#define _kernel_syscall_h_
 
 #include "../../lib/hw.h"
 
@@ -13,4 +13,4 @@ void* kernel_alloc(size_t size);
 // Free memory allocated by kernel_alloc
 int kernel_free(void* ptr);
 
-#endif //kernel_syscall
+#endif //_kernel_syscall_h_
