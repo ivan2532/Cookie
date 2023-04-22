@@ -12,9 +12,7 @@ private:
 
 public:
     static CCB *get();
-
     static void put(CCB *ccb);
-
 };
 
 #endif //_Scheduler_hpp_

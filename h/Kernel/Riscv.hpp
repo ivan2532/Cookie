@@ -2,8 +2,8 @@
 // RISC-V utility assembler functions
 //
 
-#ifndef _riscv_hpp_
-#define _riscv_hpp_
+#ifndef _Riscv_hpp_
+#define _Riscv_hpp_
 
 #include "../../lib/hw.h"
 
@@ -16,6 +16,7 @@ public:
 
     // Push x3..x31 registers onto stack
     static void pushRegisters();
+    //_ZN5Riscv13pushRegistersEv
 
     // Pop x3..x31 registers onto stack
     static void popRegisters();
@@ -175,4 +176,4 @@ inline void Riscv::w_sstatus(uint64 sstatus)
     __asm__ volatile ("csrw sstatus, %[sstatus]" : : [sstatus] "r"(sstatus));
 }
 
-#endif //_riscv_hpp_
+#endif //_Riscv_hpp_
