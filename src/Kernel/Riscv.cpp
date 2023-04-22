@@ -1,4 +1,4 @@
-#include "../../h/Kernel/riscv.hpp"
+#include "../../h/Kernel/Riscv.hpp"
 
 void Riscv::popSppSpie()
 {
