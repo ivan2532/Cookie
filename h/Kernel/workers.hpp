@@ -5,4 +5,8 @@ extern void workerBodyA();
 
 extern void workerBodyB();
 
+extern void workerBodyC();
+
+extern void workerBodyD();
+
 #endif //_workers_hpp_

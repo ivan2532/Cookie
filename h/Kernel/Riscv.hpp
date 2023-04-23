@@ -11,7 +11,8 @@ class Riscv
 {
 public:
 
-    // Pop sstatus.spp and sstatus.spie bits (has to be a non inline function)
+    // Pop sstatus.spp and sstatus.spie bits
+    // (has to be a non inline function because we need ra)
     static void popSppSpie();
 
     // Push x3..x31 registers onto stack
@@ -47,15 +48,15 @@ public:
 
     enum BitMaskSip
     {
-        SIP_SSIE = (1 << 1),
-        SIP_STIE = (1 << 5),
-        SIP_SEIE = (1 << 9),
+        SIP_SSIP = (1 << 1),
+        SIP_STIP = (1 << 5),
+        SIP_SEIP = (1 << 9),
     };
 
     // Mask set sip
     static void ms_sip(uint64 mask);
 
-    // Mask clear sip
+    // Clears only the bits covered by the mask in sip register
     static void mc_sip(uint64 mask);
 
     // Read sip
@@ -82,6 +83,22 @@ public:
 
     // Write to sstatus
     static void w_sstatus(uint64 sstatus);
+
+    static void supervisorTrap();
+
+private:
+    static void handleSupervisorTrap();
+    inline static void handleSoftwareInterrupt();
+    inline static void handleExternalInterrupt();
+    inline static void handleEcall();
+    inline static void handleUnknownTrapCause(uint64 scause);
+    inline static void handleSystemCalls();
+
+    // Timer interrupt is passed on as a software interrupt
+    static constexpr uint64 SCAUSE_SOFTWARE_INTERRUPT = 0x8000000000000001UL;
+    static constexpr uint64 SCAUSE_EXTERNAL_INTERRUPT = 0x8000000000000009UL;
+    static constexpr uint64 SCAUSE_ECALL_FROM_USER_MODE = 0x0000000000000008UL;
+    static constexpr uint64 SCAUSE_ECALL_FROM_SUPERVISOR_MODE = 0x0000000000000009UL;
 };
 
 inline uint64 Riscv::r_scause()

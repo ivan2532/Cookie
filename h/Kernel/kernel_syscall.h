@@ -7,10 +7,18 @@
 
 #include "../../lib/hw.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Allocate a memory block of "size" bytes on the heap.
 void* kernel_alloc(size_t size);
 
 // Free memory allocated by kernel_alloc
 int kernel_free(void* ptr);
 
-#endif //_kernel_syscall_h_
+#ifdef __cplusplus
+}
+#endif
+
+#endif //_kernel_syscall_hpp_
