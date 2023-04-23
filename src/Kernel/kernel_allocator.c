@@ -26,35 +26,32 @@ static void initFirstBlock()
 // Align given size to MEM_BLOCK_SIZE
 inline static size_t align(size_t size)
 {
-    return ( (size - 1) / MEM_BLOCK_SIZE + 1) * MEM_BLOCK_SIZE;
+    return ((size - 1) / MEM_BLOCK_SIZE + 1) * MEM_BLOCK_SIZE;
 }
 
 // Get a block of needed size from a free block and leave the rest free. Needed size includes the descriptor size.
 static Block* splitFreeBlockAndUpdateFreeList(Block* block, size_t neededSize)
 {
-    if(neededSize % MEM_BLOCK_SIZE != 0 || neededSize > block->size)
+    if(neededSize % MEM_BLOCK_SIZE != 0 || neededSize > block->size) return 0;
+
+    if(block->size - neededSize >= MEM_BLOCK_SIZE)
     {
-        return 0;
+        void* leftoverBlockAddress = (void*)block + neededSize;
+        Block* leftoverBlock = (Block*)leftoverBlockAddress;
+        leftoverBlock->size = block->size - neededSize;
+        leftoverBlock->prev = block->prev;
+        leftoverBlock->next = block->next;
+        block->size = neededSize;
+        block->next = leftoverBlock;
     }
 
-    if(block->size - neededSize < MEM_BLOCK_SIZE)
-    {
-        return block;
-    }
+    // Remove the allocated block from the list
+    if(block->prev != 0) block->prev->next = block->next;
+    if(block->next != 0) block->next->prev = block->prev;
+    if(freeBlocksList == block) freeBlocksList = block->next;
 
-    void* leftoverBlockAddress = (void*)block + neededSize;
-    Block* leftoverBlock = (Block*)leftoverBlockAddress;
-    leftoverBlock->size = block->size - neededSize;
-    leftoverBlock->prev = block->prev;
-    leftoverBlock->next = block->next;
-
-    if(block == freeBlocksList)
-    {
-        freeBlocksList = leftoverBlock;
-    }
-
-    block->size = neededSize;
-    block->next = leftoverBlock;
+    block->prev = 0;
+    block->next = 0;
 
     return block;
 }
@@ -62,11 +59,6 @@ static Block* splitFreeBlockAndUpdateFreeList(Block* block, size_t neededSize)
 // Find the first block in the list of free blocks that is big enough to fit minSize.
 static Block* firstFit(size_t minSize)
 {
-    if(freeBlocksList == 0)
-    {
-        initFirstBlock();
-    }
-
     Block* iterator = freeBlocksList;
 
     while (iterator != 0)
@@ -88,11 +80,7 @@ static Block* mergeBlocks(Block* parent, Block* child)
 {
     parent->size += child->size;
     parent->next = child->next;
-
-    if(child->next)
-    {
-        child->next->prev = parent;
-    }
+    if(child->next) child->next->prev = parent;
 
     return parent;
 }
@@ -100,44 +88,22 @@ static Block* mergeBlocks(Block* parent, Block* child)
 // Allocate a memory block of "size" bytes on the heap.
 void* kernel_alloc(size_t size)
 {
-    if(size == 0)
-    {
-        // Can't allocate a block with size 0
-        return 0;
-    }
+    // Can't allocate a block with size 0
+    if(size == 0) return 0;
 
     // Include the size of the descriptor and align it to MEM_BLOCK_SIZE
     size += sizeof(Block);
     size = align(size);
 
-    if(freeBlocksList == 0)
-    {
-        initFirstBlock();
-    }
+    if(freeBlocksList == 0) initFirstBlock();
 
     // Find a suitable free block
     Block* blockToAllocate = firstFit(size);
-    if(blockToAllocate == 0)
-    {
-        //Out of memory
-        return 0;
-    }
+    // Out of memory
+    if(blockToAllocate == 0) return 0;
 
     // Leave the rest of the block that we don't need free and update the list of free blocks
     blockToAllocate = splitFreeBlockAndUpdateFreeList(blockToAllocate, size);
-
-    // Remove the allocated block from the list
-    if(blockToAllocate->prev != 0)
-    {
-        blockToAllocate->prev->next = blockToAllocate->next;
-    }
-    if(blockToAllocate->next != 0)
-    {
-        blockToAllocate->next->prev = blockToAllocate->prev;
-    }
-
-    blockToAllocate->prev = 0;
-    blockToAllocate->next = 0;
 
     // Return the actual memory pointer after the descriptor
     return (void*)blockToAllocate + sizeof(Block);
@@ -169,14 +135,8 @@ int kernel_free(void* ptr)
         descriptor->next = iterator;
         descriptor->prev = iterator->prev;
 
-        if(iterator->prev)
-        {
-            iterator->prev->next = descriptor;
-        }
-        else
-        {
-            freeBlocksList = descriptor;
-        }
+        if(iterator->prev) iterator->prev->next = descriptor;
+        else freeBlocksList = descriptor;
 
         iterator->prev = descriptor;
     }
