@@ -13,7 +13,7 @@ void Riscv::popSppSpie()
 
 void Riscv::handleSupervisorTrap()
 {
-    switch (auto scause = Riscv::r_scause())
+    switch (auto scause = Riscv::readScause())
     {
         // Here the software interrupt is used as a timer interrupt!
         case SCAUSE_SOFTWARE_INTERRUPT:
@@ -32,7 +32,7 @@ void Riscv::handleSupervisorTrap()
     }
 
     // Clear interrupt pending bit
-    mc_sip(SIP_SSIP);
+    maskClearSip(SIP_SSIP);
 }
 
 inline void Riscv::handleSoftwareInterrupt()
@@ -41,15 +41,15 @@ inline void Riscv::handleSoftwareInterrupt()
     if(TCB::timeSliceCounter >= TCB::running->m_timeSlice)
     {
         // Save important supervisor registers on the stack!
-        auto volatile sepc = r_sepc();
-        auto volatile sstatus = r_sstatus();
+        auto volatile sepc = readSepc();
+        auto volatile sstatus = readSstatus();
 
         TCB::timeSliceCounter = 0;
         TCB::dispatch();
 
         // Restore important supervisor registers
-        w_sstatus(sstatus);
-        w_sepc(sepc);
+        writeSstatus(sstatus);
+        writeSepc(sepc);
     }
 }
 
@@ -65,14 +65,14 @@ inline void Riscv::handleEcall()
     constexpr auto EcallInstructionSize = 4;
 
     // Save important supervisor registers on the stack!
-    auto volatile sepc = r_sepc() + EcallInstructionSize;
-    auto volatile sstatus = r_sstatus();
+    auto volatile sepc = readSepc() + EcallInstructionSize;
+    auto volatile sstatus = readSstatus();
 
     handleSystemCalls();
 
     // Restore important supervisor registers
-    w_sstatus(sstatus);
-    w_sepc(sepc);
+    writeSstatus(sstatus);
+    writeSepc(sepc);
 }
 
 inline void Riscv::handleUnknownTrapCause(uint64 scause)
@@ -80,11 +80,11 @@ inline void Riscv::handleUnknownTrapCause(uint64 scause)
     printString("\nscause: ");
     printInteger(scause);
 
-    auto volatile sepc = r_sepc();
+    auto volatile sepc = readSepc();
     printString("\nsepc: ");
     printInteger(sepc);
 
-    auto volatile stval = r_stval();
+    auto volatile stval = readStval();
     printString("\nstval: ");
     printInteger(stval);
 }
@@ -96,38 +96,67 @@ inline void Riscv::handleSystemCalls()
 
     switch (sysCallCode)
     {
-        case 0x01: // mem_alloc
-        {
-            // Get the size argument
-            size_t volatile sizeArg;
-            __asm__ volatile ("mv %[outSize], a1" : [outSize] "=r" (sizeArg));
-
-            auto volatile returnValue = kernel_alloc(sizeArg);
-
-            // Store result in A0
-            __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
-
+        case SYS_CALL_MEM_ALLOC:
+            handleMemAlloc();
             break;
-        }
-        case 0x02: // mem_free
-        {
-            // Get the ptr argument
-            void* volatile ptrArg;
-            __asm__ volatile ("mv %[outPtr], a1" : [outPtr] "=r" (ptrArg));
-
-            auto volatile returnValue = kernel_free(ptrArg);
-
-            // Store result in A0
-            __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
-
+        case SYS_CALL_MEM_FREE:
+            handleMemFree();
             break;
-        }
-        case 0x13: // thread_dispatch / yield
-        {
-            TCB::timeSliceCounter = 0;
-            TCB::dispatch();
-
+        case SYS_CALL_THREAD_CREATE:
+            handleThreadCreate();
             break;
-        }
+        case SYS_CALL_THREAD_DISPATCH:
+            handleThreadDispatch();
+            break;
     }
+}
+
+inline void Riscv::handleMemAlloc()
+{
+    // Get arguments
+    size_t volatile sizeArg;
+    __asm__ volatile ("mv %[outSize], a1" : [outSize] "=r" (sizeArg));
+
+    auto volatile returnValue = kernel_alloc(sizeArg);
+
+    // Store result in A0
+    __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
+}
+
+inline void Riscv::handleMemFree()
+{
+    // Get arguments
+    void* volatile ptrArg;
+    __asm__ volatile ("mv %[outPtr], a1" : [outPtr] "=r" (ptrArg));
+
+    auto volatile returnValue = kernel_free(ptrArg);
+
+    // Store result in A0
+    __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
+}
+
+inline void Riscv::handleThreadCreate()
+{
+    // Get arguments
+    TCB* volatile handle;
+    TCB::Body volatile routine;
+    void* volatile args;
+    void* volatile stack;
+    __asm__ volatile ("mv %[outHandle], a1" : [outHandle] "=r" (handle));
+    __asm__ volatile ("mv %[outRoutine], a2" : [outRoutine] "=r" (routine));
+    __asm__ volatile ("mv %[outArgs], a3" : [outArgs] "=r" (args));
+    __asm__ volatile ("mv %[outStack], a4" : [outStack] "=r" (stack));
+
+    auto returnValue = 0;
+    handle = TCB::createThread(routine, args, stack);
+
+    // Store results in A0 and A1
+    __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
+    __asm__ volatile ("mv a1, %[inHandle]" : : [inHandle] "r" (handle));
+}
+
+inline void Riscv::handleThreadDispatch()
+{
+    TCB::timeSliceCounter = 0;
+    TCB::dispatch();
 }

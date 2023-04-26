@@ -1,16 +1,9 @@
 #include "../../h/Kernel/TCB.hpp"
 #include "../../h/Kernel/Riscv.hpp"
+#include "../../h/C_API/syscall_c.hpp"
 
 TCB* TCB::running = nullptr;
 uint64 TCB::timeSliceCounter = 0;
-
-void TCB::yield()
-{
-    // Store the system call code in register a0
-    __asm__ volatile ("li a0, 0x13");
-    // Generate an environment call exception
-    __asm__ volatile ("ecall");
-}
 
 void TCB::bodyWrapper()
 {
@@ -22,11 +15,11 @@ void TCB::bodyWrapper()
     // That means we are still in the supervisor regime!
     // TODO: Go back to user mode if needed (check SPP)!
 
-    running->m_Body();
+    running->m_Body(running->m_Args);
     running->m_Finished = true;
 
     // Once the thread has finished execution, give the processor to someone else
-    TCB::yield();
+    thread_dispatch();
 }
 
 void TCB::dispatch()
@@ -43,7 +36,9 @@ void TCB::dispatch()
     TCB::contextSwitch(&old->m_Context, &running->m_Context);
 }
 
-TCB *TCB::createThread(TCB::Body body)
+TCB *TCB::createThread(TCB::Body body, void* args, void* stack)
 {
-    return new TCB(body, DEFAULT_TIME_SLICE);
+    auto result = new TCB(body, args, DEFAULT_TIME_SLICE, (uint64*)stack);
+    if(body == nullptr) running = result;
+    return result;
 }

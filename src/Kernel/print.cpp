@@ -4,8 +4,8 @@
 
 void printString(char const *string)
 {
-    //auto sstatus = Riscv::r_sstatus();
-    //Riscv::mc_sstatus(Riscv::SSTATUS_SIE);
+    //auto sstatus = Riscv::readSstatus();
+    //Riscv::maskClearSstatus(Riscv::SSTATUS_SIE);
 
     while (*string != '\0')
     {
@@ -13,13 +13,13 @@ void printString(char const *string)
         string++;
     }
 
-    //Riscv::ms_sstatus(sstatus & Riscv::SSTATUS_SIE ? Riscv::SSTATUS_SIE : 0);
+    //Riscv::maskSetSstatus(sstatus & Riscv::SSTATUS_SIE ? Riscv::SSTATUS_SIE : 0);
 }
 
 void printInteger(uint64 integer)
 {
-    //auto sstatus = Riscv::r_sstatus();
-    //Riscv::mc_sstatus(Riscv::SSTATUS_SIE);
+    //auto sstatus = Riscv::readSstatus();
+    //Riscv::maskClearSstatus(Riscv::SSTATUS_SIE);
 
     static char digits[] = "0123456789";
     char buf[16];
@@ -37,5 +37,5 @@ void printInteger(uint64 integer)
     while (--i >= 0)
         __putc(buf[i]);
 
-    //Riscv::ms_sstatus(sstatus & Riscv::SSTATUS_SIE ? Riscv::SSTATUS_SIE : 0);
+    //Riscv::maskSetSstatus(sstatus & Riscv::SSTATUS_SIE ? Riscv::SSTATUS_SIE : 0);
 }

@@ -9,10 +9,9 @@ class TCB
     friend class Riscv;
 
 public:
-    using Body = void(*)();
+    using Body = void(*)(void*);
 
-    static TCB* createThread(Body body);
-    static void yield();
+    static TCB* createThread(Body body, void* args, void* stack);
 
     static TCB* running;
 
@@ -27,10 +26,11 @@ private:
     // When creating an initial context, we want ra to point to the body of
     // our thread immediately, and sp will point at the start of the space
     // allocated for the stack
-    TCB(Body body, uint64 timeSlice)
+    TCB(Body body, void* args, uint64 timeSlice, uint64* stack)
         :
         m_Body(body),
-        m_Stack(body != nullptr ? new uint64[DEFAULT_STACK_SIZE] : nullptr),
+        m_Args(args),
+        m_Stack(body != nullptr ? stack : nullptr),
         m_Context
         ({
             (uint64)&bodyWrapper,
@@ -49,6 +49,7 @@ private:
     };
 
     Body m_Body;
+    void* m_Args;
     uint64* m_Stack;
     Context m_Context;
     uint64 m_timeSlice;
