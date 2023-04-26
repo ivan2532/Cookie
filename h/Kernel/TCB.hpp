@@ -18,7 +18,10 @@ public:
 
     bool isFinished() const { return m_Finished; }
 
-    ~TCB() { delete[] m_Stack; }
+    ~TCB()
+    {
+        delete[] m_Stack;
+    }
 
 private:
     // When creating an initial context, we want ra to point to the body of
@@ -27,11 +30,11 @@ private:
     TCB(Body body, uint64 timeSlice)
         :
         m_Body(body),
-        m_Stack(body != nullptr ? new uint64[STACK_SIZE] : nullptr),
+        m_Stack(body != nullptr ? new uint64[DEFAULT_STACK_SIZE] : nullptr),
         m_Context
         ({
             (uint64)&bodyWrapper,
-            m_Stack != nullptr ? (uint64)&m_Stack[STACK_SIZE] : 0
+            m_Stack != nullptr ? (uint64)&m_Stack[DEFAULT_STACK_SIZE] : 0
          }),
         m_timeSlice(timeSlice),
         m_Finished(false)
@@ -58,9 +61,6 @@ private:
     static void dispatch();
 
     static uint64 timeSliceCounter;
-
-    static constexpr uint64 STACK_SIZE = 1024;
-    static constexpr uint64 DEFAULT_TIME_SLICE = 2;
 };
 
 

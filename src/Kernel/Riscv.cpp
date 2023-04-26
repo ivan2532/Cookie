@@ -15,6 +15,7 @@ void Riscv::handleSupervisorTrap()
 {
     switch (auto scause = Riscv::r_scause())
     {
+        // Here the software interrupt is used as a timer interrupt!
         case SCAUSE_SOFTWARE_INTERRUPT:
             handleSoftwareInterrupt();
             break;
@@ -40,15 +41,15 @@ inline void Riscv::handleSoftwareInterrupt()
     if(TCB::timeSliceCounter >= TCB::running->m_timeSlice)
     {
         // Save important supervisor registers on the stack!
-        auto sepc = r_sepc();
-        auto sstatus = r_sstatus();
+        auto volatile sepc = r_sepc();
+        auto volatile sstatus = r_sstatus();
 
         TCB::timeSliceCounter = 0;
         TCB::dispatch();
 
         // Restore important supervisor registers
-        w_sepc(sepc);
         w_sstatus(sstatus);
+        w_sepc(sepc);
     }
 }
 
@@ -59,56 +60,19 @@ inline void Riscv::handleExternalInterrupt()
 
 inline void Riscv::handleEcall()
 {
-    // Save important supervisor registers on the stack!
     // Ecall will have a sepc that points back to ecall, so we want to return to the
     // instruction after that ecall
     constexpr auto EcallInstructionSize = 4;
-    auto sepc = r_sepc() + EcallInstructionSize;
-    auto sstatus = r_sstatus();
 
-    uint64 sysCallCode;
-    __asm__ volatile ("mv %[outCode], a0" : [outCode] "=r" (sysCallCode));
+    // Save important supervisor registers on the stack!
+    auto volatile sepc = r_sepc() + EcallInstructionSize;
+    auto volatile sstatus = r_sstatus();
 
-    switch (sysCallCode)
-    {
-        case 0x01: // mem_alloc
-        {
-            // Get the size argument
-            size_t sizeArg;
-            __asm__ volatile ("mv %[outSize], a1" : [outSize] "=r" (sizeArg));
-
-            void* returnValue = kernel_alloc(sizeArg);
-
-            // Store result in A0
-            __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
-
-            break;
-        }
-        case 0x02: // mem_free
-        {
-            // Get the ptr argument
-            void* ptrArg;
-            __asm__ volatile ("mv %[outPtr], a1" : [outPtr] "=r" (ptrArg));
-
-            int returnValue = kernel_free(ptrArg);
-
-            // Store result in A0
-            __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
-
-            break;
-        }
-        case 0x13: // thread_dispatch / yield
-        {
-            TCB::timeSliceCounter = 0;
-            TCB::dispatch();
-
-            break;
-        }
-    }
+    handleSystemCalls();
 
     // Restore important supervisor registers
-    w_sepc(sepc);
     w_sstatus(sstatus);
+    w_sepc(sepc);
 }
 
 inline void Riscv::handleUnknownTrapCause(uint64 scause)
@@ -116,18 +80,18 @@ inline void Riscv::handleUnknownTrapCause(uint64 scause)
     printString("\nscause: ");
     printInteger(scause);
 
-    auto sepc = r_sepc();
+    auto volatile sepc = r_sepc();
     printString("\nsepc: ");
     printInteger(sepc);
 
-    auto stval = r_stval();
+    auto volatile stval = r_stval();
     printString("\nstval: ");
     printInteger(stval);
 }
 
 inline void Riscv::handleSystemCalls()
 {
-    uint64 sysCallCode;
+    uint64 volatile sysCallCode;
     __asm__ volatile ("mv %[outCode], a0" : [outCode] "=r" (sysCallCode));
 
     switch (sysCallCode)
@@ -135,10 +99,10 @@ inline void Riscv::handleSystemCalls()
         case 0x01: // mem_alloc
         {
             // Get the size argument
-            size_t sizeArg;
+            size_t volatile sizeArg;
             __asm__ volatile ("mv %[outSize], a1" : [outSize] "=r" (sizeArg));
 
-            void* returnValue = kernel_alloc(sizeArg);
+            auto volatile returnValue = kernel_alloc(sizeArg);
 
             // Store result in A0
             __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
@@ -148,10 +112,10 @@ inline void Riscv::handleSystemCalls()
         case 0x02: // mem_free
         {
             // Get the ptr argument
-            void* ptrArg;
+            void* volatile ptrArg;
             __asm__ volatile ("mv %[outPtr], a1" : [outPtr] "=r" (ptrArg));
 
-            int returnValue = kernel_free(ptrArg);
+            auto volatile returnValue = kernel_free(ptrArg);
 
             // Store result in A0
             __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));

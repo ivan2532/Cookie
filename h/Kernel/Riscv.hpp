@@ -15,13 +15,6 @@ public:
     // (has to be a non inline function because we need ra)
     static void popSppSpie();
 
-    // Push x3..x31 registers onto stack
-    static void pushRegisters();
-    //_ZN5Riscv13pushRegistersEv
-
-    // Pop x3..x31 registers onto stack
-    static void popRegisters();
-
     // Read scause
     static uint64 r_scause();
 

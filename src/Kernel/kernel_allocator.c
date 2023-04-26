@@ -4,6 +4,7 @@
 //
 
 #include "../../lib/hw.h"
+#include "../../lib/console.h"
 
 typedef struct Block
 {
@@ -34,13 +35,18 @@ static Block* splitFreeBlockAndUpdateFreeList(Block* block, size_t neededSize)
 {
     if(neededSize % MEM_BLOCK_SIZE != 0 || neededSize > block->size) return 0;
 
-    if(block->size - neededSize >= MEM_BLOCK_SIZE)
+    if(block->size - neededSize > 0)
     {
         void* leftoverBlockAddress = (void*)block + neededSize;
         Block* leftoverBlock = (Block*)leftoverBlockAddress;
         leftoverBlock->size = block->size - neededSize;
         leftoverBlock->prev = block->prev;
         leftoverBlock->next = block->next;
+
+        if(block->next != 0) block->next->prev = leftoverBlock;
+        if(block->prev != 0) block->prev->next = leftoverBlock;
+        else freeBlocksList = leftoverBlock;
+
         block->size = neededSize;
         block->next = leftoverBlock;
     }
@@ -117,6 +123,11 @@ int kernel_free(void* ptr)
 
     // Find where to insert the block in the list
     Block* iterator = freeBlocksList;
+    if(iterator == 0)
+    {
+        freeBlocksList = descriptor;
+        return 0;
+    }
 
     while(iterator < descriptor)
     {
@@ -124,18 +135,22 @@ int kernel_free(void* ptr)
         if(iterator->next == 0)
         {
             iterator->next = descriptor;
+            descriptor->prev = iterator;
             break;
         }
 
         iterator = iterator->next;
     }
 
+    // If we try to free an already freed block, return
+    if(iterator == descriptor) return 0;
+
     if(iterator > descriptor)
     {
         descriptor->next = iterator;
         descriptor->prev = iterator->prev;
 
-        if(iterator->prev) iterator->prev->next = descriptor;
+        if(iterator->prev != 0) iterator->prev->next = descriptor;
         else freeBlocksList = descriptor;
 
         iterator->prev = descriptor;

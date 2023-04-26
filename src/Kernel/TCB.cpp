@@ -14,13 +14,13 @@ void TCB::yield()
 
 void TCB::bodyWrapper()
 {
-    // Here we are still in the handleSupervisorTrap()!
-    // That means we are still in the supervisor regime!
-    // TODO: Go back to user mode when needed.
-
-    // The thread has is created and should start now, we are still in the supervisor regime
+    // The thread is created and should start now, we are still in the supervisor regime
     // Continue program execution from here and return from the trap
     Riscv::popSppSpie();
+
+    // Here we are still in the handleSupervisorTrap()!
+    // That means we are still in the supervisor regime!
+    // TODO: Go back to user mode if needed (check SPP)!
 
     running->m_Body();
     running->m_Finished = true;
@@ -33,7 +33,11 @@ void TCB::dispatch()
 {
     auto old = running;
 
-    if(!old->m_Finished) Scheduler::put(old);
+    if(!old->m_Finished)
+    {
+        Scheduler::put(old);
+    }
+
     running = Scheduler::get();
 
     TCB::contextSwitch(&old->m_Context, &running->m_Context);

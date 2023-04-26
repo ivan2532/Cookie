@@ -8,7 +8,9 @@ int main()
 {
     // Enable interrupts
     Riscv::ms_sstatus(Riscv::SSTATUS_SIE);
-    // Set our trap handler
+
+    // Set our trap handler, save the old one so we can restore it after our kernel has finished
+    auto oldTrap = Riscv::r_stvec();
     Riscv::w_stvec((uint64)&Riscv::supervisorTrap);
 
     TCB* threads[5];
@@ -49,7 +51,10 @@ int main()
     }
 
     for(auto& thread : threads) delete thread;
-    printString("Finished\n");
 
+    // We are done, restore the old trap
+    Riscv::w_stvec(oldTrap);
+
+    printString("Finished\n");
     return 0;
 }
