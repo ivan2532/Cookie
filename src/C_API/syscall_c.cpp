@@ -4,6 +4,10 @@
     In these functions we store the system call code and arguments in the
     corresponding registers and then switch to supervisor mode from which
     we call the internal kernel functions.
+
+    IMPORTANT:
+    Registers A4 and A5 (maybe some others as well) used for sending function
+    parameters get overriden for some unknown reason.
 */
 
 #include "../../h/C_API/syscall_c.hpp"
@@ -51,12 +55,13 @@ int thread_create(thread_t* handle, void(*start_routine)(void*), void* arg)
     void* stack = mem_alloc(DEFAULT_STACK_SIZE);
 
     // Store arguments starting from A1
-    __asm__ volatile ("mv a1, %[inHandle]" : : [inHandle] "r" (handle));
+    __asm__ volatile ("mv a1, %[inHandle]" : : [inHandle] "r" (*handle));
     __asm__ volatile ("mv a2, %[inRoutine]" : : [inRoutine] "r" (start_routine));
     __asm__ volatile ("mv a3, %[inArg]" : : [inArg] "r" (arg));
-    __asm__ volatile ("mv a4, %[inStack]" : : [inStack] "r" (stack));
+    __asm__ volatile ("mv a6, %[inStack]" : : [inStack] "r" (stack));
 
     // Store the system call code in register A0
+    // This will invalidate the local stack variable, because mem_alloc returns value in A0
     __asm__ volatile ("li a0, 0x11");
 
     // Generate interrupt

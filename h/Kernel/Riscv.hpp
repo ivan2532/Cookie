@@ -94,8 +94,8 @@ private:
 
     static constexpr uint64 SCAUSE_SOFTWARE_INTERRUPT = 0x8000000000000001UL;
     static constexpr uint64 SCAUSE_EXTERNAL_INTERRUPT = 0x8000000000000009UL;
-    static constexpr uint64 SCAUSE_ECALL_FROM_USER_MODE = 0x0000000000000008UL;
-    static constexpr uint64 SCAUSE_ECALL_FROM_SUPERVISOR_MODE = 0x0000000000000009UL;
+    static constexpr uint64 SCAUSE_ECALL_USER_MODE = 0x0000000000000008UL;
+    static constexpr uint64 SCAUSE_ECALL_SUPERVISOR_MODE = 0x0000000000000009UL;
 
     static constexpr uint64 SYS_CALL_MEM_ALLOC = 0x01;
     static constexpr uint64 SYS_CALL_MEM_FREE = 0x02;

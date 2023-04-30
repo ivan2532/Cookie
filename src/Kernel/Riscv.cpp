@@ -22,8 +22,8 @@ void Riscv::handleSupervisorTrap()
         case SCAUSE_EXTERNAL_INTERRUPT:
             handleExternalInterrupt();
             break;
-        case SCAUSE_ECALL_FROM_USER_MODE:
-        case SCAUSE_ECALL_FROM_SUPERVISOR_MODE:
+        case SCAUSE_ECALL_USER_MODE:
+        case SCAUSE_ECALL_SUPERVISOR_MODE:
             handleEcall();
             break;
         default:
@@ -125,8 +125,9 @@ inline void Riscv::handleMemAlloc()
 
 inline void Riscv::handleMemFree()
 {
-    // Get arguments
     void* volatile ptrArg;
+
+    // Get arguments
     __asm__ volatile ("mv %[outPtr], a1" : [outPtr] "=r" (ptrArg));
 
     auto volatile returnValue = kernel_free(ptrArg);
@@ -137,15 +138,16 @@ inline void Riscv::handleMemFree()
 
 inline void Riscv::handleThreadCreate()
 {
-    // Get arguments
     TCB* volatile handle;
     TCB::Body volatile routine;
     void* volatile args;
     void* volatile stack;
+
+    // Get arguments
     __asm__ volatile ("mv %[outHandle], a1" : [outHandle] "=r" (handle));
     __asm__ volatile ("mv %[outRoutine], a2" : [outRoutine] "=r" (routine));
     __asm__ volatile ("mv %[outArgs], a3" : [outArgs] "=r" (args));
-    __asm__ volatile ("mv %[outStack], a4" : [outStack] "=r" (stack));
+    __asm__ volatile ("mv %[outStack], a6" : [outStack] "=r" (stack));
 
     auto returnValue = 0;
     handle = TCB::createThread(routine, args, stack);
