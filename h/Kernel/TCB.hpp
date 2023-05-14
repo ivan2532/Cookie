@@ -68,7 +68,7 @@ private:
 
     static void contextSwitch(Context* oldContext, Context* newContext);
     static void getNewRunning();
-    static void dispatch();
+    static void dispatch(bool putOldThreadInScheduler = true);
     static int deleteThread(TCB* handle);
 
     static uint64 timeSliceCounter;

@@ -22,23 +22,15 @@ void TCB::bodyWrapper()
 
 void TCB::getNewRunning()
 {
-    running = Scheduler::get();
-
-    while(suspendedThreads.contains(running))
-    {
-        Scheduler::put(running);
-        running = Scheduler::get();
-    }
+    do running = Scheduler::get();
+    while(suspendedThreads.contains(running));
 }
 
-void TCB::dispatch()
+void TCB::dispatch(bool putOldThreadInScheduler)
 {
     auto old = running;
 
-    if(!old->m_Finished)
-    {
-        Scheduler::put(old);
-    }
+    if(putOldThreadInScheduler && !old->m_Finished) Scheduler::put(old);
     getNewRunning();
 
     TCB::contextSwitch(&old->m_Context, &running->m_Context);
@@ -73,14 +65,11 @@ TCB *TCB::createThread(TCB::Body body, void* args, void* stack)
 
 void TCB::waitForThread(TCB* handle)
 {
-    if(handle == this || !allThreads.contains(handle))
-    {
-        return;
-    }
+    if(handle == this || !allThreads.contains(handle)) return;
 
     suspendedThreads.addLast(this);
     handle->m_waitingThread = this;
-    dispatch();
+    dispatch(false);
 }
 
 void TCB::unblockWaitingThread()
@@ -88,5 +77,6 @@ void TCB::unblockWaitingThread()
     if(m_waitingThread == nullptr) return;
 
     TCB::suspendedThreads.remove(m_waitingThread);
+    Scheduler::put(m_waitingThread);
     m_waitingThread = nullptr;
 }
