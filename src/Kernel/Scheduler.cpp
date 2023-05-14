@@ -1,13 +1,13 @@
 #include "../../h/Kernel/Scheduler.hpp"
 
-List<TCB> Scheduler::readyCoroutineQueue;
+List<TCB> Scheduler::threadQueue;
 
 TCB *Scheduler::get()
 {
-    return readyCoroutineQueue.removeFirst();
+    return threadQueue.removeFirst();
 }
 
 void Scheduler::put(TCB *ccb)
 {
-    readyCoroutineQueue.addLast(ccb);
+    threadQueue.addLast(ccb);
 }

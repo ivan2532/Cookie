@@ -4,8 +4,10 @@ _ZN3TCB13contextSwitchEPNS_7ContextES1_:
     # a0 => &old->context
     # a1 => &running->context
 
-    # Save old thread's Context (ra and sp)
+    # Skip saving context if we got nullptr as old context
     beqz a0, load
+
+    # Save old thread's Context (ra and sp)
     sd ra, 0 * 8(a0) # 0*8(a0) is the old context's first field (uint64 ra)
     sd sp, 1 * 8(a0) # 1*8(a0) is the old context's second field (uint64 sp)
 

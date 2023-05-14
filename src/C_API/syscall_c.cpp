@@ -100,6 +100,9 @@ void thread_dispatch()
 
 void thread_join(thread_t handle)
 {
+    // Store arguments starting from A1
+    __asm__ volatile ("mv a1, %[inHandle]" : : [inHandle] "r" (handle));
+
     // Store the system call code in register a0
     __asm__ volatile ("li a0, 0x14");
 

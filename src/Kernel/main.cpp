@@ -32,31 +32,16 @@ int main()
     printString("ThreadD created\n");
 
     // Wait for all threads
-    for(auto thread : threads) thread_join(thread);
+    for(auto thread : threads)
+    {
+        thread_join(thread);
+    }
 
-//    // Make main thread give the processor to someone else until all other threads
-//    // are done.
-//    while(true)
-//    {
-//        auto allWorkerThreadsFinished = true;
-//        for(auto thread : threads)
-//        {
-//            if(thread != threads[0] && thread != threads[1] && !thread->isFinished())
-//            {
-//                allWorkerThreadsFinished = false;
-//                break;
-//            }
-//        }
-//        if(allWorkerThreadsFinished) break;
-//
-//        thread_dispatch();
-//    }
-
-    for(auto& thread : threads) delete thread;
+    // Delete main thread
+    delete threads[0];
 
     // We are done, restore the old trap
     Riscv::writeStvec(oldTrap);
-
     printString("Finished\n");
     return 0;
 }

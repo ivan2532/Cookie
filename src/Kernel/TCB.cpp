@@ -22,15 +22,23 @@ void TCB::bodyWrapper()
 
 void TCB::getNewRunning()
 {
-    do running = Scheduler::get();
-    while(suspendedThreads.contains(running));
+    running = Scheduler::get();
+
+    while(suspendedThreads.contains(running))
+    {
+        Scheduler::put(running);
+        running = Scheduler::get();
+    }
 }
 
 void TCB::dispatch()
 {
     auto old = running;
 
-    if(!old->m_Finished) Scheduler::put(old);
+    if(!old->m_Finished)
+    {
+        Scheduler::put(old);
+    }
     getNewRunning();
 
     TCB::contextSwitch(&old->m_Context, &running->m_Context);
