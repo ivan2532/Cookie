@@ -13,12 +13,14 @@ public:
 
     static TCB* createThread(Body body, void* args, void* stack);
 
+    static List<TCB> allThreads;
     static TCB* running;
 
     bool isFinished() const { return m_Finished; }
 
     ~TCB()
     {
+        allThreads.remove(this);
         delete[] m_Stack;
     }
 
@@ -60,6 +62,7 @@ private:
     // Switch coroutine context (ra and sp)
     static void contextSwitch(Context* oldContext, Context* newContext);
     static void dispatch();
+    static int deleteRunningThread();
 
     static uint64 timeSliceCounter;
 };

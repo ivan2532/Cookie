@@ -2,6 +2,7 @@
 #include "../../h/Kernel/Riscv.hpp"
 #include "../../h/C_API/syscall_c.hpp"
 
+List<TCB> TCB::allThreads;
 TCB* TCB::running = nullptr;
 uint64 TCB::timeSliceCounter = 0;
 
@@ -36,9 +37,23 @@ void TCB::dispatch()
     TCB::contextSwitch(&old->m_Context, &running->m_Context);
 }
 
+int TCB::deleteRunningThread()
+{
+    if(running->m_Body == nullptr) return -1;
+
+    delete running;
+    running = Scheduler::get();
+
+    TCB::contextSwitch(nullptr, &running->m_Context);
+    return 0;
+}
+
 TCB *TCB::createThread(TCB::Body body, void* args, void* stack)
 {
     auto result = new TCB(body, args, DEFAULT_TIME_SLICE, (uint64*)stack);
+
     if(body == nullptr) running = result;
+    else allThreads.addLast(result);
+
     return result;
 }

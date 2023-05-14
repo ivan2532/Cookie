@@ -90,6 +90,7 @@ private:
     inline static void handleMemAlloc();
     inline static void handleMemFree();
     inline static void handleThreadCreate();
+    inline static void handleThreadExit();
     inline static void handleThreadDispatch();
 
     static constexpr uint64 SCAUSE_SOFTWARE_INTERRUPT = 0x8000000000000001UL;
@@ -100,6 +101,7 @@ private:
     static constexpr uint64 SYS_CALL_MEM_ALLOC = 0x01;
     static constexpr uint64 SYS_CALL_MEM_FREE = 0x02;
     static constexpr uint64 SYS_CALL_THREAD_CREATE = 0x11;
+    static constexpr uint64 SYS_CALL_THREAD_EXIT = 0x12;
     static constexpr uint64 SYS_CALL_THREAD_DISPATCH = 0x13;
 };
 

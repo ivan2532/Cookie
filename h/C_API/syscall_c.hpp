@@ -21,9 +21,12 @@
         class TCB;
         typedef TCB* thread_t;
 
-        // Start a thread with start_routine(arg), returns a handle to the created thread on thread_t* handle,
+        // Start a thread with start_routine(arg), returns a handle to the created thread in thread_t* handle,
         // and returns the resulting code
         int thread_create(thread_t* handle, void(*start_routine)(void*), void* arg);
+
+        // Terminate current thread, returns negative value if it fails
+        int thread_exit();
 
         // Let other threads know that they can take over the processor,
         // does not necesseraly stop the current thread

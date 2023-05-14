@@ -9,6 +9,12 @@ void workerBodyA(void* args)
         printString("A: i=");
         printInteger(i);
         printString("\n");
+
+        if(i == 8)
+        {
+            thread_exit();
+        }
+
         for (uint64 j = 0; j < 10000; j++)
         {
             for (uint64 k = 0; k < 30000; k++)

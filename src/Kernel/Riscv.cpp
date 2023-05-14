@@ -105,6 +105,9 @@ inline void Riscv::handleSystemCalls()
         case SYS_CALL_THREAD_CREATE:
             handleThreadCreate();
             break;
+        case SYS_CALL_THREAD_EXIT:
+            handleThreadExit();
+            break;
         case SYS_CALL_THREAD_DISPATCH:
             handleThreadDispatch();
             break;
@@ -155,6 +158,14 @@ inline void Riscv::handleThreadCreate()
     // Store results in A0 and A1
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
     __asm__ volatile ("mv a1, %[inHandle]" : : [inHandle] "r" (handle));
+}
+
+inline void Riscv::handleThreadExit()
+{
+    auto returnValue = TCB::deleteRunningThread();
+
+    // Store result in a0
+    __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
 }
 
 inline void Riscv::handleThreadDispatch()

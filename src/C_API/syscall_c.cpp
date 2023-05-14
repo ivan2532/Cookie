@@ -77,6 +77,21 @@ int thread_create(thread_t* handle, void(*start_routine)(void*), void* arg)
     return returnValue;
 }
 
+int thread_exit()
+{
+    // Store the system call code in register a0
+    __asm__ volatile ("li a0, 0x12");
+
+    // Generate interrupt
+    __asm__ volatile ("ecall");
+
+    // Get the return value after ECALL
+    int volatile returnValue;
+    __asm__ volatile ("mv %[outReturn], a0" : [outReturn] "=r" (returnValue));
+
+    return returnValue;
+}
+
 void thread_dispatch()
 {
     // Store the system call code in register a0

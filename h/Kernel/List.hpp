@@ -5,85 +5,112 @@ template<typename T>
 class List
 {
 private:
-    struct Elem
+    struct Node
     {
-        T *data;
-        Elem *next;
+        T* data;
+        Node* next;
 
-        Elem(T *data, Elem *next) : data(data), next(next) {}
+        Node(T* data, Node* next) : data(data), next(next) {}
     };
 
-    Elem *head, *tail;
+    Node* head;
+    Node* tail;
 
 public:
-    List() : head(0), tail(0) {}
+    List() : head(nullptr), tail(nullptr) {}
 
-    List(const List<T> &) = delete;
+    List(const List<T>&) = delete;
 
-    List<T> &operator=(const List<T> &) = delete;
+    List<T>& operator=(const List<T>&) = delete;
 
     void addFirst(T *data)
     {
-        Elem *elem = new Elem(data, head);
-        head = elem;
-        if (!tail) { tail = head; }
+        Node* newNode = new Node(data, head);
+        head = newNode;
+        if (!tail) tail = head;
     }
 
     void addLast(T *data)
     {
-        Elem *elem = new Elem(data, 0);
+        Node* newNode = new Node(data, nullptr);
         if (tail)
         {
-            tail->next = elem;
-            tail = elem;
-        } else
-        {
-            head = tail = elem;
+            tail->next = newNode;
+            tail = newNode;
         }
+        else head = tail = newNode;
     }
 
-    T *removeFirst()
+    T* removeFirst()
     {
-        if (!head) { return 0; }
+        if (!head) return nullptr;
 
-        Elem *elem = head;
+        Node* elem = head;
         head = head->next;
-        if (!head) { tail = 0; }
+        if (!head) tail = nullptr;
 
-        T *ret = elem->data;
+        T* ret = elem->data;
         delete elem;
         return ret;
     }
 
-    T *peekFirst()
+    T* peekFirst()
     {
-        if (!head) { return 0; }
+        if (!head) return nullptr;
         return head->data;
     }
 
-    T *removeLast()
+    T* removeLast()
     {
-        if (!head) { return 0; }
+        if (!head) return nullptr;
 
-        Elem *prev = 0;
-        for (Elem *curr = head; curr && curr != tail; curr = curr->next)
+        Node* prev = nullptr;
+        for (Node* cur = head; cur && cur != tail; cur = cur->next)
         {
-            prev = curr;
+            prev = cur;
         }
 
-        Elem *elem = tail;
-        if (prev) { prev->next = 0; }
-        else { head = 0; }
+        Node* nodeToRemove = tail;
+        if (prev) prev->next = nullptr;
+        else head = nullptr;
         tail = prev;
 
-        T *ret = elem->data;
-        delete elem;
+        T* ret = nodeToRemove->data;
+        delete nodeToRemove;
         return ret;
     }
 
-    T *peekLast()
+    T* remove(T* value)
     {
-        if (!tail) { return 0; }
+        if (!head) return nullptr;
+
+        Node* prev = nullptr;
+        for (Node* cur = head; cur; cur = cur->next)
+        {
+            if(cur->data != value)
+            {
+                prev = cur;
+                continue;
+            }
+
+            if(cur == head && head == tail)
+            {
+                head = nullptr;
+                tail = nullptr;
+            }
+            else if(cur == head) head = cur->next;
+            else if(cur == tail) tail = prev;
+            else prev->next = cur->next;
+
+            return cur->data;
+        }
+
+        return nullptr;
+    }
+
+    T* peekLast()
+    {
+        if (!tail) return nullptr;
         return tail->data;
     }
 };

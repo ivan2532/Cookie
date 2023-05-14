@@ -38,7 +38,7 @@ int main()
         auto allWorkerThreadsFinished = true;
         for(auto thread : threads)
         {
-            if(thread != threads[0] && !thread->isFinished())
+            if(thread != threads[0] && thread != threads[1] && !thread->isFinished())
             {
                 allWorkerThreadsFinished = false;
                 break;
@@ -46,6 +46,8 @@ int main()
         }
         if(allWorkerThreadsFinished) break;
 
+        auto res = thread_exit();
+        if(res == -1) printString("\n\n-1\n\n");
         thread_dispatch();
     }
 
