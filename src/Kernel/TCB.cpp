@@ -22,6 +22,7 @@ void TCB::bodyWrapper()
 
 void TCB::getNewRunning()
 {
+    // Get first ready thread that is not suspended
     do running = Scheduler::get();
     while(suspendedThreads.contains(running));
 }
@@ -30,6 +31,7 @@ void TCB::dispatch(bool putOldThreadInScheduler)
 {
     auto old = running;
 
+    // Bool parameter used for thread_join, we don't want to put suspended threads into the Scheduler
     if(putOldThreadInScheduler && !old->m_Finished) Scheduler::put(old);
     getNewRunning();
 
@@ -38,12 +40,16 @@ void TCB::dispatch(bool putOldThreadInScheduler)
 
 int TCB::deleteThread(TCB* handle)
 {
+    // Error if trying to delete main thread
     if(handle == nullptr || handle->m_Body == nullptr) return -1;
 
+    // Unblock thread that is waiting for this thread to finish
     handle->unblockWaitingThread();
+
     auto handleIsRunning = (running == handle);
     delete handle;
 
+    // If we are deleting the running thread, change context and don't save old context
     if(handleIsRunning)
     {
         getNewRunning();
@@ -57,6 +63,8 @@ TCB *TCB::createThread(TCB::Body body, void* args, void* stack)
 {
     auto result = new TCB(body, args, DEFAULT_TIME_SLICE, (uint64*)stack);
 
+    // If we are creating the main thread, set it as running
+    // All other threads go to TCB::allThreads
     if(body == nullptr) running = result;
     else allThreads.addLast(result);
 
@@ -65,18 +73,30 @@ TCB *TCB::createThread(TCB::Body body, void* args, void* stack)
 
 void TCB::waitForThread(TCB* handle)
 {
+    // Can't wait for current thread, check if thread exists
     if(handle == this || !allThreads.contains(handle)) return;
 
+    // Add thread to suspended queue
     suspendedThreads.addLast(this);
+
+    // Set waiting thread that we want to unblock later
     handle->m_waitingThread = this;
+
+    // Change context and don't put suspended thread into the Scheduler
     dispatch(false);
 }
 
 void TCB::unblockWaitingThread()
 {
+    // If no thread is waiting, return
     if(m_waitingThread == nullptr) return;
 
+    // Remove waiting thread from suspended queue
     TCB::suspendedThreads.remove(m_waitingThread);
+
+    // Put the unblocked thread into the Scheduler
     Scheduler::put(m_waitingThread);
+
+    // Clear waiting thread
     m_waitingThread = nullptr;
 }
