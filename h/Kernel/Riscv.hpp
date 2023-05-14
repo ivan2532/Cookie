@@ -13,7 +13,7 @@ public:
 
     // Pop sstatus.spp and sstatus.spie bits
     // (has to be a non inline function because we need ra)
-    static void popSppSpie();
+    static void returnFromSystemCall();
 
     // Read scause
     static uint64 readScause();
@@ -92,6 +92,7 @@ private:
     inline static void handleThreadCreate();
     inline static void handleThreadExit();
     inline static void handleThreadDispatch();
+    inline static void handleThreadJoin();
 
     static constexpr uint64 SCAUSE_SOFTWARE_INTERRUPT = 0x8000000000000001UL;
     static constexpr uint64 SCAUSE_EXTERNAL_INTERRUPT = 0x8000000000000009UL;
@@ -103,6 +104,7 @@ private:
     static constexpr uint64 SYS_CALL_THREAD_CREATE = 0x11;
     static constexpr uint64 SYS_CALL_THREAD_EXIT = 0x12;
     static constexpr uint64 SYS_CALL_THREAD_DISPATCH = 0x13;
+    static constexpr uint64 SYS_CALL_THREAD_JOIN = 0x14;
 };
 
 inline uint64 Riscv::readScause()

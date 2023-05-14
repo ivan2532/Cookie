@@ -31,25 +31,26 @@ int main()
     thread_create(&threads[4], workerBodyD, nullptr);
     printString("ThreadD created\n");
 
-    // Make main thread give the processor to someone else until all other threads
-    // are done.
-    while(true)
-    {
-        auto allWorkerThreadsFinished = true;
-        for(auto thread : threads)
-        {
-            if(thread != threads[0] && thread != threads[1] && !thread->isFinished())
-            {
-                allWorkerThreadsFinished = false;
-                break;
-            }
-        }
-        if(allWorkerThreadsFinished) break;
+    // Wait for all threads
+    for(auto thread : threads) thread_join(thread);
 
-        auto res = thread_exit();
-        if(res == -1) printString("\n\n-1\n\n");
-        thread_dispatch();
-    }
+//    // Make main thread give the processor to someone else until all other threads
+//    // are done.
+//    while(true)
+//    {
+//        auto allWorkerThreadsFinished = true;
+//        for(auto thread : threads)
+//        {
+//            if(thread != threads[0] && thread != threads[1] && !thread->isFinished())
+//            {
+//                allWorkerThreadsFinished = false;
+//                break;
+//            }
+//        }
+//        if(allWorkerThreadsFinished) break;
+//
+//        thread_dispatch();
+//    }
 
     for(auto& thread : threads) delete thread;
 

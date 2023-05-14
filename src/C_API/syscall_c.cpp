@@ -55,7 +55,7 @@ int thread_create(thread_t* handle, void(*start_routine)(void*), void* arg)
     void* stack = mem_alloc(DEFAULT_STACK_SIZE);
 
     // Store arguments starting from A1
-    __asm__ volatile ("mv a1, %[inHandle]" : : [inHandle] "r" (*handle));
+    __asm__ volatile ("mv a1, %[inHandle]" : : [inHandle] "r" (handle));
     __asm__ volatile ("mv a2, %[inRoutine]" : : [inRoutine] "r" (start_routine));
     __asm__ volatile ("mv a3, %[inArg]" : : [inArg] "r" (arg));
     __asm__ volatile ("mv a6, %[inStack]" : : [inStack] "r" (stack));
@@ -69,11 +69,8 @@ int thread_create(thread_t* handle, void(*start_routine)(void*), void* arg)
 
     // Get the return value after ECALL
     int volatile returnValue;
-    thread_t volatile returnHandle;
     __asm__ volatile ("mv %[outReturn], a0" : [outReturn] "=r" (returnValue));
-    __asm__ volatile ("mv %[outHandle], a1" : [outHandle] "=r" (returnHandle));
 
-    *handle = returnHandle;
     return returnValue;
 }
 
@@ -96,6 +93,15 @@ void thread_dispatch()
 {
     // Store the system call code in register a0
     __asm__ volatile ("li a0, 0x13");
+
+    // Generate interrupt
+    __asm__ volatile ("ecall");
+}
+
+void thread_join(thread_t handle)
+{
+    // Store the system call code in register a0
+    __asm__ volatile ("li a0, 0x14");
 
     // Generate interrupt
     __asm__ volatile ("ecall");

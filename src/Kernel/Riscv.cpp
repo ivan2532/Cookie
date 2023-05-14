@@ -5,7 +5,7 @@
 
 #include "../../lib/console.h"
 
-void Riscv::popSppSpie()
+void Riscv::returnFromSystemCall()
 {
     __asm__ volatile ("csrw sepc, ra");
     __asm__ volatile ("sret");
@@ -111,6 +111,9 @@ inline void Riscv::handleSystemCalls()
         case SYS_CALL_THREAD_DISPATCH:
             handleThreadDispatch();
             break;
+        case SYS_CALL_THREAD_JOIN:
+            handleThreadJoin();
+            break;
     }
 }
 
@@ -141,28 +144,28 @@ inline void Riscv::handleMemFree()
 
 inline void Riscv::handleThreadCreate()
 {
-    TCB* volatile handle;
+    TCB** volatile handle;
     TCB::Body volatile routine;
     void* volatile args;
     void* volatile stack;
 
     // Get arguments
-    __asm__ volatile ("mv %[outHandle], a1" : [outHandle] "=r" (handle));
+    __asm__ volatile ("mv %[inHandle], a1" : [inHandle] "=r" (handle));
     __asm__ volatile ("mv %[outRoutine], a2" : [outRoutine] "=r" (routine));
     __asm__ volatile ("mv %[outArgs], a3" : [outArgs] "=r" (args));
     __asm__ volatile ("mv %[outStack], a6" : [outStack] "=r" (stack));
 
+    *handle = TCB::createThread(routine, args, stack);
+
     auto returnValue = 0;
-    handle = TCB::createThread(routine, args, stack);
 
     // Store results in A0 and A1
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
-    __asm__ volatile ("mv a1, %[inHandle]" : : [inHandle] "r" (handle));
 }
 
 inline void Riscv::handleThreadExit()
 {
-    auto returnValue = TCB::deleteRunningThread();
+    auto returnValue = TCB::deleteThread(TCB::running);
 
     // Store result in a0
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
@@ -172,4 +175,14 @@ inline void Riscv::handleThreadDispatch()
 {
     TCB::timeSliceCounter = 0;
     TCB::dispatch();
+}
+
+inline void Riscv::handleThreadJoin()
+{
+    TCB* volatile handle;
+
+    // Get arguments
+    __asm__ volatile ("mv %[outHandle], a1" : [outHandle] "=r" (handle));
+
+    TCB::running->waitForThread(handle);
 }

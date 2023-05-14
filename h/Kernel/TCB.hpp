@@ -14,13 +14,18 @@ public:
     static TCB* createThread(Body body, void* args, void* stack);
 
     static List<TCB> allThreads;
+    static List<TCB> suspendedThreads;
     static TCB* running;
 
     bool isFinished() const { return m_Finished; }
 
+    void waitForThread(TCB* handle);
+    void unblockWaitingThread();
+
     ~TCB()
     {
         allThreads.remove(this);
+        suspendedThreads.remove(this);
         delete[] m_Stack;
     }
 
@@ -30,16 +35,17 @@ private:
     // allocated for the stack
     TCB(Body body, void* args, uint64 timeSlice, uint64* stack)
         :
-        m_Body(body),
-        m_Args(args),
-        m_Stack(body != nullptr ? stack : nullptr),
-        m_Context
+            m_Body(body),
+            m_Args(args),
+            m_Stack(body != nullptr ? stack : nullptr),
+            m_Context
         ({
             (uint64)&bodyWrapper,
             m_Stack != nullptr ? (uint64)&m_Stack[DEFAULT_STACK_SIZE] : 0
          }),
-        m_timeSlice(timeSlice),
-        m_Finished(false)
+            m_timeSlice(timeSlice),
+            m_Finished(false),
+            m_waitingThread(nullptr)
     {
         if(body != nullptr) Scheduler::put(this);
     }
@@ -56,13 +62,14 @@ private:
     Context m_Context;
     uint64 m_timeSlice;
     bool m_Finished;
+    TCB* m_waitingThread;
 
     static void bodyWrapper();
 
-    // Switch coroutine context (ra and sp)
     static void contextSwitch(Context* oldContext, Context* newContext);
+    static void getNewRunning();
     static void dispatch();
-    static int deleteRunningThread();
+    static int deleteThread(TCB* handle);
 
     static uint64 timeSliceCounter;
 };

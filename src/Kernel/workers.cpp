@@ -21,7 +21,6 @@ void workerBodyA(void* args)
             {
                 // busy wait
             }
-//            TCB::yield();
         }
     }
 }
@@ -39,7 +38,6 @@ void workerBodyB(void* args)
             {
                 // busy wait
             }
-//            TCB::yield();
         }
     }
 }
@@ -83,7 +81,6 @@ void workerBodyC(void* args)
         printInteger(i);
         printString("\n");
     }
-//    TCB::yield();
 }
 
 void workerBodyD(void* args)
@@ -111,5 +108,4 @@ void workerBodyD(void* args)
         printInteger(i);
         printString("\n");
     }
-//    TCB::yield();
 }

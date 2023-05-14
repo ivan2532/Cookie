@@ -32,6 +32,9 @@
         // does not necesseraly stop the current thread
         void thread_dispatch();
 
+        // Block current thread until thread_t handle finishes
+        void thread_join(thread_t handle);
+
     #ifdef __cplusplus
     } // extern "C"
     #endif // __cplusplus

@@ -93,6 +93,8 @@ public:
                 continue;
             }
 
+            if(prev) prev->next = cur->next;
+
             if(cur == head && head == tail)
             {
                 head = nullptr;
@@ -100,7 +102,6 @@ public:
             }
             else if(cur == head) head = cur->next;
             else if(cur == tail) tail = prev;
-            else prev->next = cur->next;
 
             return cur->data;
         }
@@ -112,6 +113,16 @@ public:
     {
         if (!tail) return nullptr;
         return tail->data;
+    }
+
+    bool contains(T* value)
+    {
+        for (Node* cur = head; cur; cur = cur->next)
+        {
+            if(cur->data == value) return true;
+        }
+
+        return false;
     }
 };
 
