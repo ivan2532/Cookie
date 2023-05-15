@@ -22,7 +22,7 @@
         typedef TCB* thread_t;
 
         // Start a thread with start_routine(arg), returns a handle to the created thread in thread_t* handle,
-        // and returns the resulting code
+        // returns negative value if it fails
         int thread_create(thread_t* handle, void(*start_routine)(void*), void* arg);
 
         // Terminate current thread, returns negative value if it fails

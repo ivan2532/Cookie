@@ -53,6 +53,7 @@ int mem_free(void* ptr)
 int thread_create(thread_t* handle, void(*start_routine)(void*), void* arg)
 {
     void* stack = mem_alloc(DEFAULT_STACK_SIZE);
+    if(stack == 0) return -1;
 
     // Store arguments starting from A1
     __asm__ volatile ("mv a1, %[inHandle]" : : [inHandle] "r" (handle));

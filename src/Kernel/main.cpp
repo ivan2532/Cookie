@@ -13,32 +13,34 @@ int main()
     auto oldTrap = Riscv::readStvec();
     Riscv::writeStvec((uint64) &Riscv::supervisorTrap);
 
-    thread_t threads[5];
+    // Create main thread
+    // When we create a main thread (specific case when body = nullptr) we don't put it in the Scheduler,
+    // it will gain it's returning Context once it gives the processor to another thread
+    thread_t mainThread;
+    thread_create(&mainThread, nullptr, nullptr);
+    printString("Main thread created\n");
 
-    // Create main thread, and set it to running
-    // When we create a main thread (specific case when body = nullptr,
-    // we don't put it in the Scheduler, it will gain it's returning Context
-    // once it gives the processor to another thread
-    thread_create(&threads[0], nullptr, nullptr);
+    // Create and start worker threads, createThread will add them to the Scheduler
+    Thread workerA(workerBodyA, nullptr);
+    printString("WorkerA created\n");
 
-    // Create worker threads, createThread will add them to the Scheduler
-    thread_create(&threads[1], workerBodyA, nullptr);
-    printString("ThreadA created\n");
-    thread_create(&threads[2], workerBodyB, nullptr);
-    printString("ThreadB created\n");
-    thread_create(&threads[3], workerBodyC, nullptr);
-    printString("ThreadC created\n");
-    thread_create(&threads[4], workerBodyD, nullptr);
-    printString("ThreadD created\n");
+    Thread workerB(workerBodyB, nullptr);
+    printString("WorkerB created\n");
+
+    Thread workerC(workerBodyC, nullptr);
+    printString("WorkerC created\n");
+
+    Thread workerD(workerBodyD, nullptr);
+    printString("WorkerD created\n");
 
     // Wait for all threads
-    for(auto thread : threads)
-    {
-        thread_join(thread);
-    }
+    workerA.join();
+    workerB.join();
+    workerC.join();
+    workerD.join();
 
     // Delete main thread
-    delete threads[0];
+    delete mainThread;
 
     // We are done, restore the old trap
     Riscv::writeStvec(oldTrap);

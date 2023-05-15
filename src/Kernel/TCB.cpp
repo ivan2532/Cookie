@@ -40,8 +40,14 @@ void TCB::dispatch(bool putOldThreadInScheduler)
 
 int TCB::deleteThread(TCB* handle)
 {
-    // Error if trying to delete main thread
-    if(handle == nullptr || handle->m_Body == nullptr) return -1;
+    if(handle == nullptr) return -1;
+
+    // Handle deletion of main thread
+    if(handle->m_Body == nullptr)
+    {
+        delete handle;
+        return 0;
+    }
 
     // Unblock thread that is waiting for this thread to finish
     handle->unblockWaitingThread();
@@ -59,14 +65,18 @@ int TCB::deleteThread(TCB* handle)
     return 0;
 }
 
-TCB *TCB::createThread(TCB::Body body, void* args, void* stack)
+TCB* TCB::createThread(TCB::Body body, void* args, void* stack)
 {
     auto result = new TCB(body, args, DEFAULT_TIME_SLICE, (uint64*)stack);
 
     // If we are creating the main thread, set it as running
     // All other threads go to TCB::allThreads
     if(body == nullptr) running = result;
-    else allThreads.addLast(result);
+    else
+    {
+        allThreads.addFirst(result);
+        dispatch();
+    }
 
     return result;
 }

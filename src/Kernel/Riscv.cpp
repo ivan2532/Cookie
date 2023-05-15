@@ -157,7 +157,7 @@ inline void Riscv::handleThreadCreate()
 
     *handle = TCB::createThread(routine, args, stack);
 
-    auto returnValue = 0;
+    auto returnValue = (*handle == nullptr ? -1 : 0);
 
     // Store results in A0 and A1
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
