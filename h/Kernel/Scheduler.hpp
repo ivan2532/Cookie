@@ -12,7 +12,7 @@ private:
 
 public:
     static TCB *get();
-    static void put(TCB *ccb);
+    static void put(TCB *handle, bool putAtFrontOfQueue = false);
 };
 
 #endif //_Scheduler_hpp_

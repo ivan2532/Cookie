@@ -1,9 +1,10 @@
 #include "../../h/Kernel/Riscv.hpp"
 #include "../../h/Kernel/print.hpp"
 #include "../../h/Kernel/TCB.hpp"
-#include "../../h/Kernel/kernel_syscall.h"
+#include "../../h/Kernel/kernel_allocator.h"
 
 #include "../../lib/console.h"
+#include "../../h/Kernel/SCB.hpp"
 
 void Riscv::returnFromSystemCall()
 {
@@ -94,7 +95,7 @@ inline void Riscv::handleSystemCalls()
     uint64 volatile sysCallCode;
     __asm__ volatile ("mv %[outCode], a0" : [outCode] "=r" (sysCallCode));
 
-    switch (sysCallCode)
+    switch (sysCallCode) // NOLINT(hicpp-multiway-paths-covered)
     {
         case SYS_CALL_MEM_ALLOC:
             handleMemAlloc();
@@ -113,6 +114,18 @@ inline void Riscv::handleSystemCalls()
             break;
         case SYS_CALL_THREAD_JOIN:
             handleThreadJoin();
+            break;
+        case SYS_CALL_SEM_OPEN:
+            handleSemaphoreOpen();
+            break;
+        case SYS_CALL_SEM_CLOSE:
+            handleSemaphoreClose();
+            break;
+        case SYS_CALL_SEM_WAIT:
+            handleSemaphoreWait();
+            break;
+        case SYS_CALL_SEM_SIGNAL:
+            handleSemaphoreSignal();
             break;
     }
 }
@@ -156,7 +169,6 @@ inline void Riscv::handleThreadCreate()
     __asm__ volatile ("mv %[outStack], a6" : [outStack] "=r" (stack));
 
     *handle = TCB::createThread(routine, args, stack);
-
     auto returnValue = (*handle == nullptr ? -1 : 0);
 
     // Store results in A0 and A1
@@ -167,7 +179,7 @@ inline void Riscv::handleThreadExit()
 {
     auto returnValue = TCB::deleteThread(TCB::running);
 
-    // Store result in a0
+    // Store result in A0
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
 }
 
@@ -185,4 +197,62 @@ inline void Riscv::handleThreadJoin()
     __asm__ volatile ("mv %[outHandle], a1" : [outHandle] "=r" (handle));
 
     TCB::running->waitForThread(handle);
+}
+
+void Riscv::handleSemaphoreOpen()
+{
+    SCB** volatile handle;
+    unsigned volatile init;
+
+    // Get arguments
+    __asm__ volatile ("mv %[outHandle], a1" : [outHandle] "=r" (handle));
+    __asm__ volatile ("mv %[outInit], a2" : [outInit] "=r" (init));
+
+    *handle = new SCB(init);
+    auto returnValue = (*handle == nullptr ? -1 : 0);
+
+    // Store results in A0
+    __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
+}
+
+void Riscv::handleSemaphoreClose()
+{
+    SCB* volatile handle;
+
+    // Get arguments
+    __asm__ volatile ("mv %[outHandle], a1" : [outHandle] "=r" (handle));
+
+    delete handle;
+    auto returnValue = 0;
+
+    // Store results in A0
+    __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
+}
+
+void Riscv::handleSemaphoreWait()
+{
+    SCB* volatile id;
+
+    // Get arguments
+    __asm__ volatile ("mv %[outId], a1" : [outId] "=r" (id));
+
+    id->wait();
+    auto returnValue = 0;
+
+    // Store results in A0
+    __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
+}
+
+void Riscv::handleSemaphoreSignal()
+{
+    SCB* volatile id;
+
+    // Get arguments
+    __asm__ volatile ("mv %[outId], a1" : [outId] "=r" (id));
+
+    id->signal();
+    auto returnValue = 0;
+
+    // Store results in A0
+    __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
 }

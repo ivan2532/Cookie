@@ -3,23 +3,10 @@
 #include "../../h/Kernel/workers.hpp"
 #include "../../h/Kernel/print.hpp"
 #include "../../h/Kernel/Riscv.hpp"
+#include "../../h/Kernel/semaphoreTestThreads.h"
 
-int main()
+void threadsTest()
 {
-    // Enable interrupts
-    Riscv::maskSetSstatus(Riscv::SSTATUS_SIE);
-
-    // Set our trap handler, save the old one so we can restore it after our kernel has finished
-    auto oldTrap = Riscv::readStvec();
-    Riscv::writeStvec((uint64) &Riscv::supervisorTrap);
-
-    // Create main thread
-    // When we create a main thread (specific case when body = nullptr) we don't put it in the Scheduler,
-    // it will gain it's returning Context once it gives the processor to another thread
-    thread_t mainThread;
-    thread_create(&mainThread, nullptr, nullptr);
-    printString("Main thread created\n");
-
     // Create and start worker threads, createThread will add them to the Scheduler
     Thread workerA(workerBodyA, nullptr);
     printString("WorkerA created\n");
@@ -38,6 +25,46 @@ int main()
     workerB.join();
     workerC.join();
     workerD.join();
+}
+
+void semaphoreTest()
+{
+    sem_t semaphoreA;
+    sem_open(&semaphoreA, 0);
+
+    sem_t semaphoreB;
+    sem_open(&semaphoreB, 0);
+
+    ThreadA threadA(semaphoreA, semaphoreB);
+    ThreadB threadB(semaphoreA, semaphoreB);
+
+    threadB.start();
+    threadA.start();
+
+    threadA.join();
+    threadB.join();
+
+    sem_close(semaphoreA);
+    sem_close(semaphoreB);
+}
+
+int main()
+{
+    // Set our trap handler, save the old one so we can restore it after our kernel has finished
+    auto oldTrap = Riscv::readStvec();
+    Riscv::writeStvec((uint64) &Riscv::supervisorTrap);
+
+    // Enable interrupts
+    Riscv::maskSetSstatus(Riscv::SSTATUS_SIE);
+
+    // Create main thread
+    // When we create a main thread (specific case when body = nullptr) we don't put it in the Scheduler,
+    // it will gain it's returning Context once it gives the processor to another thread
+    thread_t mainThread;
+    thread_create(&mainThread, nullptr, nullptr);
+    printString("Main thread created\n");
+
+    semaphoreTest();
 
     // Delete main thread
     delete mainThread;

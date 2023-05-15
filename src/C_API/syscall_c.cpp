@@ -110,3 +110,76 @@ void thread_join(thread_t handle)
     // Generate interrupt
     __asm__ volatile ("ecall");
 }
+
+int sem_open(sem_t* handle, unsigned init)
+{
+    // Move arguments so they start from A1 instead of A0
+    __asm__ volatile ("mv a2, a1");
+    __asm__ volatile ("mv a1, a0");
+
+    // Store the system call code in register A0
+    __asm__ volatile ("li a0, 0x21");
+
+    // Generate interrupt
+    __asm__ volatile ("ecall");
+
+    // Get the return value after ECALL
+    int volatile returnValue;
+    __asm__ volatile ("mv %[outReturn], a0" : [outReturn] "=r" (returnValue));
+
+    return returnValue;
+}
+
+int sem_close(sem_t handle)
+{
+    // Store arguments starting from A1
+    __asm__ volatile ("mv a1, %[inHandle]" : : [inHandle] "r" (handle));
+
+    // Store the system call code in register a0
+    __asm__ volatile ("li a0, 0x22");
+
+    // Generate interrupt
+    __asm__ volatile ("ecall");
+
+    // Get the return value after ECALL
+    int volatile returnValue;
+    __asm__ volatile ("mv %[outReturn], a0" : [outReturn] "=r" (returnValue));
+
+    return returnValue;
+}
+
+int sem_wait(sem_t id)
+{
+    // Store arguments starting from A1
+    __asm__ volatile ("mv a1, %[inId]" : : [inId] "r" (id));
+
+    // Store the system call code in register a0
+    __asm__ volatile ("li a0, 0x23");
+
+    // Generate interrupt
+    __asm__ volatile ("ecall");
+
+    // Get the return value after ECALL
+    int volatile returnValue;
+    __asm__ volatile ("mv %[outReturn], a0" : [outReturn] "=r" (returnValue));
+
+    return returnValue;
+}
+
+int sem_signal(sem_t id)
+{
+    // Store arguments starting from A1
+    __asm__ volatile ("mv a1, %[inId]" : : [inId] "r" (id));
+
+    // Store the system call code in register a0
+    __asm__ volatile ("li a0, 0x24");
+
+    // Generate interrupt
+    __asm__ volatile ("ecall");
+
+    // Get the return value after ECALL
+    int volatile returnValue;
+    __asm__ volatile ("mv %[outReturn], a0" : [outReturn] "=r" (returnValue));
+
+    return returnValue;
+}

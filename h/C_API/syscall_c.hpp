@@ -35,6 +35,25 @@
         // Block current thread until thread_t handle finishes
         void thread_join(thread_t handle);
 
+        class SCB;
+        typedef SCB* sem_t;
+
+        // Creates a semaphore with starting value init, returns a handle to the created semaphore in sem_t* handle,
+        // returns negative value if it fails
+        int sem_open(sem_t* handle, unsigned init);
+
+        // Destroys the semaphore given by sem_t handle
+        // Returns 0 if successful, negative value if it fails
+        int sem_close(sem_t handle);
+
+        // Wait on the semaphore given by sem_t id
+        // Returns 0 if successful, negative value if it fails
+        int sem_wait(sem_t id);
+
+        // Siganl on the semaphore given by sem_t id
+        // Returns 0 if successful, negative value if it fails
+        int sem_signal(sem_t id);
+
     #ifdef __cplusplus
     } // extern "C"
     #endif // __cplusplus

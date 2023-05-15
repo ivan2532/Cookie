@@ -93,6 +93,10 @@ private:
     inline static void handleThreadExit();
     inline static void handleThreadDispatch();
     inline static void handleThreadJoin();
+    inline static void handleSemaphoreOpen();
+    inline static void handleSemaphoreClose();
+    inline static void handleSemaphoreWait();
+    inline static void handleSemaphoreSignal();
 
     static constexpr uint64 SCAUSE_SOFTWARE_INTERRUPT = 0x8000000000000001UL;
     static constexpr uint64 SCAUSE_EXTERNAL_INTERRUPT = 0x8000000000000009UL;
@@ -105,6 +109,10 @@ private:
     static constexpr uint64 SYS_CALL_THREAD_EXIT = 0x12;
     static constexpr uint64 SYS_CALL_THREAD_DISPATCH = 0x13;
     static constexpr uint64 SYS_CALL_THREAD_JOIN = 0x14;
+    static constexpr uint64 SYS_CALL_SEM_OPEN = 0x21;
+    static constexpr uint64 SYS_CALL_SEM_CLOSE = 0x22;
+    static constexpr uint64 SYS_CALL_SEM_WAIT = 0x23;
+    static constexpr uint64 SYS_CALL_SEM_SIGNAL = 0x24;
 };
 
 inline uint64 Riscv::readScause()

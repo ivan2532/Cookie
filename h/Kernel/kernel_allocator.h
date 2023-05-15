@@ -2,8 +2,8 @@
     Declarations of internal kernel functions
 */
 
-#ifndef _kernel_syscall_h_
-#define _kernel_syscall_h_
+#ifndef _kernel_allocator_h_
+#define _kernel_allocator_h_
 
 #include "../../lib/hw.h"
 
@@ -21,4 +21,4 @@ int kernel_free(void* ptr);
 }
 #endif
 
-#endif //_kernel_syscall_hpp_
+#endif //_kernel_allocator_h_

@@ -67,14 +67,14 @@ int TCB::deleteThread(TCB* handle)
 
 TCB* TCB::createThread(TCB::Body body, void* args, void* stack)
 {
-    auto result = new TCB(body, args, DEFAULT_TIME_SLICE, (uint64*)stack);
+    auto result = new TCB(body, args, DEFAULT_TIME_SLICE, (uint64*)stack, true);
 
     // If we are creating the main thread, set it as running
     // All other threads go to TCB::allThreads
     if(body == nullptr) running = result;
     else
     {
-        allThreads.addFirst(result);
+        allThreads.addLast(result);
         dispatch();
     }
 

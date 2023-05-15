@@ -7,7 +7,8 @@ TCB *Scheduler::get()
     return threadQueue.removeFirst();
 }
 
-void Scheduler::put(TCB *ccb)
+void Scheduler::put(TCB *handle, bool putAtFrontOfQueue)
 {
-    threadQueue.addLast(ccb);
+    if(putAtFrontOfQueue) threadQueue.addFirst(handle);
+    else threadQueue.addLast(handle);
 }

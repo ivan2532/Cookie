@@ -17,10 +17,14 @@ private:
     Node* tail;
 
 public:
-    List() : head(nullptr), tail(nullptr) {}
+    List()
+        :
+        head(nullptr),
+        tail(nullptr)
+    {
+    }
 
     List(const List<T>&) = delete;
-
     List<T>& operator=(const List<T>&) = delete;
 
     void addFirst(T *data)
