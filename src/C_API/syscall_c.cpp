@@ -11,12 +11,14 @@
 */
 
 #include "../../h/C_API/syscall_c.hpp"
+#include "../../h/Kernel/Riscv.hpp"
+#include "../../h/Kernel/kernel_allocator.h"
 
 // Allocate a memory block of "size" bytes on the heap.
 void* mem_alloc(size_t size)
 {
     // Store arguments starting from A1
-    __asm__ volatile ("mv a1, %[inSize]" : : [inSize] "r" (size));
+    __asm__ volatile ("mv a1, a0");
 
     // Store the system call code in register A0
     __asm__ volatile ("li a0, 0x01");
@@ -35,7 +37,7 @@ void* mem_alloc(size_t size)
 int mem_free(void* ptr)
 {
     // Store arguments starting from A1
-    __asm__ volatile ("mv a1, %[inPtr]" : : [inPtr] "r" (ptr));
+    __asm__ volatile ("mv a1, a0");
 
     // Store the system call code in register A0
     __asm__ volatile ("li a0, 0x02");
@@ -52,13 +54,22 @@ int mem_free(void* ptr)
 
 int thread_create(thread_t* handle, void(*start_routine)(void*), void* arg)
 {
-    void* stack = mem_alloc(DEFAULT_STACK_SIZE);
+    // Store arguments starting from A1
+    __asm__ volatile ("mv a3, a2");
+    __asm__ volatile ("mv a2, a1");
+
+    // Save handle to S1, it will be overwritten by kernel_alloc
+    __asm__ volatile ("mv s1, a0");
+
+    // TODO: Take into account kernel stack!
+    // Allocate stack for thread, A1 will be overwritten here
+    void* stack = kernel_alloc(DEFAULT_STACK_SIZE);
     if(stack == 0) return -1;
 
-    // Store arguments starting from A1
-    __asm__ volatile ("mv a1, %[inHandle]" : : [inHandle] "r" (handle));
-    __asm__ volatile ("mv a2, %[inRoutine]" : : [inRoutine] "r" (start_routine));
-    __asm__ volatile ("mv a3, %[inArg]" : : [inArg] "r" (arg));
+    // Restore handle from S1
+    __asm__ volatile ("mv a1, s1");
+
+    // Store stack argument to A6 (A4 will get overwritten by some local variable)
     __asm__ volatile ("mv a6, %[inStack]" : : [inStack] "r" (stack));
 
     // Store the system call code in register A0
@@ -71,6 +82,9 @@ int thread_create(thread_t* handle, void(*start_routine)(void*), void* arg)
     // Get the return value after ECALL
     int volatile returnValue;
     __asm__ volatile ("mv %[outReturn], a0" : [outReturn] "=r" (returnValue));
+
+    // Thread create should also start the new thread
+    thread_dispatch();
 
     return returnValue;
 }
@@ -102,7 +116,7 @@ void thread_dispatch()
 void thread_join(thread_t handle)
 {
     // Store arguments starting from A1
-    __asm__ volatile ("mv a1, %[inHandle]" : : [inHandle] "r" (handle));
+    __asm__ volatile ("mv a1, a0");
 
     // Store the system call code in register a0
     __asm__ volatile ("li a0, 0x14");
@@ -133,7 +147,7 @@ int sem_open(sem_t* handle, unsigned init)
 int sem_close(sem_t handle)
 {
     // Store arguments starting from A1
-    __asm__ volatile ("mv a1, %[inHandle]" : : [inHandle] "r" (handle));
+    __asm__ volatile ("mv a1, a0");
 
     // Store the system call code in register a0
     __asm__ volatile ("li a0, 0x22");
@@ -151,7 +165,7 @@ int sem_close(sem_t handle)
 int sem_wait(sem_t id)
 {
     // Store arguments starting from A1
-    __asm__ volatile ("mv a1, %[inId]" : : [inId] "r" (id));
+    __asm__ volatile ("mv a1, a0");
 
     // Store the system call code in register a0
     __asm__ volatile ("li a0, 0x23");
@@ -169,7 +183,7 @@ int sem_wait(sem_t id)
 int sem_signal(sem_t id)
 {
     // Store arguments starting from A1
-    __asm__ volatile ("mv a1, %[inId]" : : [inId] "r" (id));
+    __asm__ volatile ("mv a1, a0");
 
     // Store the system call code in register a0
     __asm__ volatile ("li a0, 0x24");

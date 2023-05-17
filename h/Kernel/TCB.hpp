@@ -45,8 +45,7 @@ private:
             m_Stack != nullptr ? (uint64)&m_Stack[DEFAULT_STACK_SIZE] : 0
          }),
             m_timeSlice(timeSlice),
-            m_Finished(false),
-            m_waitingThread(nullptr)
+            m_Finished(false)
     {
         if(body != nullptr) Scheduler::put(this, putAtFrontOfSchedulerQueue);
     }
@@ -63,7 +62,7 @@ private:
     Context m_Context;
     uint64 m_timeSlice;
     bool m_Finished;
-    TCB* m_waitingThread;
+    List<TCB> m_waitingThreads;
 
     static void bodyWrapper();
 

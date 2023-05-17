@@ -50,12 +50,12 @@ void semaphoreTest()
 
 int main()
 {
+    // Enable interrupts
+    Riscv::maskSetSstatus(Riscv::SSTATUS_SIE);
+
     // Set our trap handler, save the old one so we can restore it after our kernel has finished
     auto oldTrap = Riscv::readStvec();
     Riscv::writeStvec((uint64) &Riscv::supervisorTrap);
-
-    // Enable interrupts
-    Riscv::maskSetSstatus(Riscv::SSTATUS_SIE);
 
     // Create main thread
     // When we create a main thread (specific case when body = nullptr) we don't put it in the Scheduler,
@@ -64,7 +64,7 @@ int main()
     thread_create(&mainThread, nullptr, nullptr);
     printString("Main thread created\n");
 
-    semaphoreTest();
+    threadsTest();
 
     // Delete main thread
     delete mainThread;

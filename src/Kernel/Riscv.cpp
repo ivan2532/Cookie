@@ -2,6 +2,7 @@
 #include "../../h/Kernel/print.hpp"
 #include "../../h/Kernel/TCB.hpp"
 #include "../../h/Kernel/kernel_allocator.h"
+#include "../../h/C++_API/syscall_cpp.hpp"
 
 #include "../../lib/console.h"
 #include "../../h/Kernel/SCB.hpp"
@@ -157,18 +158,25 @@ inline void Riscv::handleMemFree()
 
 inline void Riscv::handleThreadCreate()
 {
-    TCB** volatile handle;
     TCB::Body volatile routine;
     void* volatile args;
     void* volatile stack;
 
-    // Get arguments
-    __asm__ volatile ("mv %[inHandle], a1" : [inHandle] "=r" (handle));
+    // Save A1 (handle) to S1, A1 will be overwritten by createThread
+    __asm__ volatile ("mv s1, a1");
+
+    // Get other arguments
     __asm__ volatile ("mv %[outRoutine], a2" : [outRoutine] "=r" (routine));
     __asm__ volatile ("mv %[outArgs], a3" : [outArgs] "=r" (args));
     __asm__ volatile ("mv %[outStack], a6" : [outStack] "=r" (stack));
 
-    *handle = TCB::createThread(routine, args, stack);
+    auto newTCB = TCB::createThread(routine, args, stack);
+
+    // Get handle
+    TCB** volatile handle;
+    __asm__ volatile ("mv %[inHandle], s1" : [inHandle] "=r" (handle));
+
+    *handle = newTCB;
     auto returnValue = (*handle == nullptr ? -1 : 0);
 
     // Store results in A0 and A1
@@ -201,6 +209,14 @@ inline void Riscv::handleThreadJoin()
 
 void Riscv::handleSemaphoreOpen()
 {
+    // Save handle to S1, it will be overwritten by kernel_alloc
+    __asm__ volatile ("mv s1, a1");
+
+    auto newSCB = static_cast<SCB*>(kernel_alloc(sizeof(SCB)));
+
+    // Restore handle from S1
+    __asm__ volatile ("mv a1, s1");
+
     SCB** volatile handle;
     unsigned volatile init;
 
@@ -208,7 +224,8 @@ void Riscv::handleSemaphoreOpen()
     __asm__ volatile ("mv %[outHandle], a1" : [outHandle] "=r" (handle));
     __asm__ volatile ("mv %[outInit], a2" : [outInit] "=r" (init));
 
-    *handle = new SCB(init);
+    *handle = new (newSCB) SCB(init);
+
     auto returnValue = (*handle == nullptr ? -1 : 0);
 
     // Store results in A0

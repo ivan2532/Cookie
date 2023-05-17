@@ -128,6 +128,8 @@ public:
 
         return false;
     }
+
+    bool isEmpty() { return head == nullptr; }
 };
 
 #endif //_List_hpp_

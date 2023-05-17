@@ -59,7 +59,7 @@ void workerBodyC(void* args)
         printString("\n");
     }
 
-    printString("C: yield\n");
+    printString("C: dispatch\n");
     __asm__ ("li t1, 7");
     thread_dispatch();
 
@@ -93,7 +93,7 @@ void workerBodyD(void* args)
         printString("\n");
     }
 
-    printString("D: yield\n");
+    printString("D: dispatch\n");
     __asm__ ("li t1, 5");
     thread_dispatch();
 
