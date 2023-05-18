@@ -64,7 +64,7 @@ int main()
     thread_create(&mainThread, nullptr, nullptr);
     printString("Main thread created\n");
 
-    threadsTest();
+    semaphoreTest();
 
     // Delete main thread
     delete mainThread;

@@ -216,14 +216,11 @@ void Riscv::handleSemaphoreOpen()
 
     auto newSCB = static_cast<SCB*>(kernel_alloc(sizeof(SCB)));
 
-    // Restore handle from S1
-    __asm__ volatile ("mv a1, s1");
-
     SCB** volatile handle;
     unsigned volatile init;
 
     // Get arguments
-    __asm__ volatile ("mv %[outHandle], a1" : [outHandle] "=r" (handle));
+    __asm__ volatile ("mv %[outHandle], s1" : [outHandle] "=r" (handle));
     __asm__ volatile ("mv %[outInit], a2" : [outInit] "=r" (init));
 
     *handle = new (newSCB) SCB(init);
@@ -236,10 +233,13 @@ void Riscv::handleSemaphoreOpen()
 
 void Riscv::handleSemaphoreClose()
 {
+    // Move handle to S1, it can be overwritten by signal()
+    __asm__ volatile ("mv s1, a1");
+
     SCB* volatile handle;
 
     // Get arguments
-    __asm__ volatile ("mv %[outHandle], a1" : [outHandle] "=r" (handle));
+    __asm__ volatile ("mv %[outHandle], s1" : [outHandle] "=r" (handle));
 
     delete handle;
     auto returnValue = 0;
@@ -250,10 +250,13 @@ void Riscv::handleSemaphoreClose()
 
 void Riscv::handleSemaphoreWait()
 {
+    // Move id to S1, it can be overwritten by signal()
+    __asm__ volatile ("mv s1, a1");
+
     SCB* volatile id;
 
     // Get arguments
-    __asm__ volatile ("mv %[outId], a1" : [outId] "=r" (id));
+    __asm__ volatile ("mv %[outId], s1" : [outId] "=r" (id));
 
     id->wait();
     auto returnValue = 0;
@@ -264,10 +267,13 @@ void Riscv::handleSemaphoreWait()
 
 void Riscv::handleSemaphoreSignal()
 {
+    // Move id to S1, it can be overwritten by signal()
+    __asm__ volatile ("mv s1, a1");
+
     SCB* volatile id;
 
     // Get arguments
-    __asm__ volatile ("mv %[outId], a1" : [outId] "=r" (id));
+    __asm__ volatile ("mv %[outId], s1" : [outId] "=r" (id));
 
     id->signal();
     auto returnValue = 0;
