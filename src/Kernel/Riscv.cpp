@@ -39,6 +39,8 @@ void Riscv::handleSupervisorTrap()
 
 inline void Riscv::handleSoftwareInterrupt()
 {
+    if(TCB::running == nullptr) return;
+
     TCB::timeSliceCounter++;
     if(TCB::timeSliceCounter >= TCB::running->m_timeSlice)
     {
