@@ -4,10 +4,6 @@
     In these functions we store the system call code and arguments in the
     corresponding registers and then switch to supervisor mode from which
     we call the internal kernel functions.
-
-    IMPORTANT:
-    Registers A4 and A5 (maybe some others as well) used for sending function
-    parameters get overriden for some unknown reason.
 */
 
 #include "../../h/C_API/syscall_c.hpp"

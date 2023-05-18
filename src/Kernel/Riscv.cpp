@@ -7,6 +7,18 @@
 #include "../../lib/console.h"
 #include "../../h/Kernel/SCB.hpp"
 
+bool Riscv::kernelLock = false;
+
+void Riscv::lock()
+{
+    kernelLock = true;
+}
+
+void Riscv::unlock()
+{
+    kernelLock = false;
+}
+
 void Riscv::returnFromSystemCall()
 {
     __asm__ volatile ("csrw sepc, ra");
@@ -15,6 +27,11 @@ void Riscv::returnFromSystemCall()
 
 void Riscv::handleSupervisorTrap()
 {
+    // Clear interrupt pending bit
+    maskClearSip(SIP_SSIP);
+
+    if(kernelLock) return;
+
     switch (auto scause = Riscv::readScause())
     {
         // Here the software interrupt is used as a timer interrupt!
@@ -32,9 +49,6 @@ void Riscv::handleSupervisorTrap()
             handleUnknownTrapCause(scause);
             break;
     }
-
-    // Clear interrupt pending bit
-    maskClearSip(SIP_SSIP);
 }
 
 inline void Riscv::handleSoftwareInterrupt()
@@ -280,4 +294,18 @@ void Riscv::handleSemaphoreSignal()
 
     // Store results in A0
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
+}
+
+void Riscv::atomicPrintString(const char * string)
+{
+    lock();
+    printString(string);
+    unlock();
+}
+
+void Riscv::atomicPrintInteger(uint64 integer)
+{
+    lock();
+    printInteger(integer);
+    unlock();
 }

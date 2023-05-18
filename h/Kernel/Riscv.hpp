@@ -10,7 +10,6 @@
 class Riscv
 {
 public:
-
     // Pop sstatus.spp and sstatus.spie bits
     // (has to be a non inline function because we need ra)
     static void returnFromSystemCall();
@@ -79,6 +78,12 @@ public:
 
     static void supervisorTrap();
 
+    static void lock();
+    static void unlock();
+
+    static void atomicPrintString(const char*);
+    static void atomicPrintInteger(uint64);
+
 private:
     static void handleSupervisorTrap();
     inline static void handleSoftwareInterrupt();
@@ -97,6 +102,8 @@ private:
     inline static void handleSemaphoreClose();
     inline static void handleSemaphoreWait();
     inline static void handleSemaphoreSignal();
+
+    static bool kernelLock;
 
     static constexpr uint64 SCAUSE_SOFTWARE_INTERRUPT = 0x8000000000000001UL;
     static constexpr uint64 SCAUSE_EXTERNAL_INTERRUPT = 0x8000000000000009UL;

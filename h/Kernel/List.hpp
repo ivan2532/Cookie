@@ -1,6 +1,9 @@
 #ifndef _List_hpp_
 #define _List_hpp_
 
+#include "kernel_allocator.h"
+#include "../C++_API/syscall_cpp.hpp"
+
 template<typename T>
 class List
 {
@@ -27,16 +30,30 @@ public:
     List(const List<T>&) = delete;
     List<T>& operator=(const List<T>&) = delete;
 
-    void addFirst(T *data)
+    void addFirst(T *data, bool useKernelAlloc = false)
     {
-        Node* newNode = new Node(data, head);
+        Node* newNode;
+        if(useKernelAlloc)
+        {
+            newNode = static_cast<Node*>(kernel_alloc(sizeof(Node)));
+            new (newNode) Node(data, head);
+        }
+        else newNode = new Node(data, head);
+
         head = newNode;
         if (!tail) tail = head;
     }
 
-    void addLast(T *data)
+    void addLast(T *data, bool useKernelAlloc = false)
     {
-        Node* newNode = new Node(data, nullptr);
+        Node* newNode;
+        if(useKernelAlloc)
+        {
+            newNode = static_cast<Node*>(kernel_alloc(sizeof(Node)));
+            new (newNode) Node(data, head);
+        }
+        else newNode = new Node(data, head);
+
         if (tail)
         {
             tail->next = newNode;

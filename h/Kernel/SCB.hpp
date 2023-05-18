@@ -18,9 +18,6 @@ public:
     void signal();
 
 protected:
-    static void lock();
-    static void unlock();
-
     void block();
     void unblock();
 

@@ -17,9 +17,9 @@ public:
         while(true)
         {
             m_CounterA++;
-            printString("A Counter: ");
-            printInteger(m_CounterA);
-            printString("\n");
+            Riscv::atomicPrintString("A Counter: ");
+            Riscv::atomicPrintInteger(m_CounterA);
+            Riscv::atomicPrintString("\n");
 
             sem_signal(m_SemaphoreA);
             if(m_CounterA == 2147483640) break;
@@ -52,9 +52,9 @@ public:
             sem_wait(m_SemaphoreA);
 
             m_CounterB++;
-            printString("B Counter: ");
-            printInteger(m_CounterB);
-            printString("\n");
+            Riscv::atomicPrintString("B Counter: ");
+            Riscv::atomicPrintInteger(m_CounterB);
+            Riscv::atomicPrintString("\n");
 
             sem_signal(m_SemaphoreB);
             if(m_CounterB == 2147483640) break;

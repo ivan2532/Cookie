@@ -1,54 +1,39 @@
 #include "../../h/Kernel/SCB.hpp"
 #include "../../h/Kernel/Riscv.hpp"
-#include "../../h/Kernel/print.hpp"
 
 void SCB::wait()
 {
-    lock();
+    Riscv::lock();
 
     if(--value < 0) block();
 
-    unlock();
+    Riscv::unlock();
 }
 
 void SCB::signal()
 {
-    lock();
+    Riscv::lock();
 
     if(value++ < 0) unblock();
 
-    unlock();
+    Riscv::unlock();
 }
 
 SCB::~SCB()
 {
-    lock();
-
     auto current = blockedQueue.removeFirst();
     while(current != nullptr)
     {
         Scheduler::put(current);
         current = blockedQueue.removeFirst();
     }
-
-    unlock();
-}
-
-void SCB::lock()
-{
-
-}
-
-void SCB::unlock()
-{
-
 }
 
 void SCB::block()
 {
-    blockedQueue.addLast(TCB::running);
+    blockedQueue.addLast(TCB::running, true);
 
-    unlock();
+    Riscv::unlock();
     TCB::dispatch(false);
 }
 
@@ -57,6 +42,6 @@ void SCB::unblock()
     auto threadToUnblock = blockedQueue.removeFirst();
     Scheduler::put(threadToUnblock, true);
 
-    unlock();
+    Riscv::unlock();
     TCB::dispatch();
 }
