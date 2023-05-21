@@ -95,7 +95,7 @@ void TCB::waitForThread(TCB* handle)
     handle->m_waitingThreads.addLast(this);
 
     // Change context and don't put suspended thread into the Scheduler
-    dispatch(false);
+    Riscv::contextSwitch(false);
 }
 
 void TCB::unblockWaitingThread()

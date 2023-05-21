@@ -1,6 +1,6 @@
-.global _ZN3TCB13contextSwitchEPNS_7ContextES1_Pb
-.type _ZN3TCB13contextSwitchEPNS_7ContextES1_Pb, @function
-_ZN3TCB13contextSwitchEPNS_7ContextES1_Pb:
+.global _ZN3TCB13contextSwitchEPNS_7ContextES1_PVb
+.type _ZN3TCB13contextSwitchEPNS_7ContextES1_PVb, @function
+_ZN3TCB13contextSwitchEPNS_7ContextES1_PVb:
     # a0 => &old->context
     # a1 => &running->context
     # a2 => &kernelLock
@@ -17,5 +17,7 @@ load:
     ld ra, 0 * 8(a1) # 0*8(a0) is the new context's first field (uint64 ra)
     ld sp, 1 * 8(a1) # 1*8(a0) is the new context's second field (uint64 sp)
 
+    # Unlock
     sd x0, 0(a2)
+
     ret

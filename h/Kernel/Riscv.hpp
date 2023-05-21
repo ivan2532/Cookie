@@ -102,9 +102,9 @@ private:
     inline static void handleSemaphoreWait();
     inline static void handleSemaphoreSignal();
 
-    static void asyncContextSwitch(bool putOldThreadInSchedule = true);
+    static void contextSwitch(bool putOldThreadInSchedule = true);
 
-    static bool kernelLock;
+    static volatile bool kernelLock;
     static bool dispatchOnUnlock;
 
     static constexpr uint64 SCAUSE_SOFTWARE_INTERRUPT = 0x8000000000000001UL;

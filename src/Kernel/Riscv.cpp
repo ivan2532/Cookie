@@ -7,7 +7,7 @@
 #include "../../lib/console.h"
 #include "../../h/Kernel/SCB.hpp"
 
-bool Riscv::kernelLock = false;
+volatile bool Riscv::kernelLock = false;
 bool Riscv::dispatchOnUnlock = false;
 
 void Riscv::lock()
@@ -18,7 +18,7 @@ void Riscv::lock()
 void Riscv::unlock()
 {
     kernelLock = false;
-    if(dispatchOnUnlock) asyncContextSwitch();
+    if(dispatchOnUnlock) contextSwitch();
 }
 
 void Riscv::returnFromSystemCall()
@@ -27,14 +27,13 @@ void Riscv::returnFromSystemCall()
     __asm__ volatile ("sret");
 }
 
-void Riscv::asyncContextSwitch(bool putOldThreadInSchedule)
+void Riscv::contextSwitch(bool putOldThreadInSchedule)
 {
     // Save important supervisor registers on the stack!
     auto volatile sepc = readSepc();
     auto volatile sstatus = readSstatus();
 
     TCB::timeSliceCounter = 0;
-
     TCB::dispatch(putOldThreadInSchedule);
 
     // Restore important supervisor registers
@@ -59,7 +58,7 @@ void Riscv::handleTimerTrap()
             return;
         }
 
-        asyncContextSwitch();
+        contextSwitch();
     }
 }
 
@@ -211,8 +210,7 @@ void Riscv::handleThreadExit()
 
 void Riscv::handleThreadDispatch()
 {
-    TCB::timeSliceCounter = 0;
-    TCB::dispatch();
+    Riscv::contextSwitch();
 }
 
 void Riscv::handleThreadJoin()
