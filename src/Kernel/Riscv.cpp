@@ -27,30 +27,6 @@ void Riscv::returnFromSystemCall()
     __asm__ volatile ("sret");
 }
 
-void Riscv::handleSupervisorTrap()
-{
-    // Clear interrupt pending bit
-    maskClearSip(SIP_SSIP);
-
-    switch (auto scause = Riscv::readScause())
-    {
-        // Here the software interrupt is used as a timer interrupt!
-        case SCAUSE_SOFTWARE_INTERRUPT:
-            handleSoftwareInterrupt();
-            break;
-        case SCAUSE_EXTERNAL_INTERRUPT:
-            handleExternalInterrupt();
-            break;
-        case SCAUSE_ECALL_USER_MODE:
-        case SCAUSE_ECALL_SUPERVISOR_MODE:
-            handleEcall();
-            break;
-        default:
-            handleUnknownTrapCause(scause);
-            break;
-    }
-}
-
 void Riscv::asyncContextSwitch(bool putOldThreadInSchedule)
 {
     // Save important supervisor registers on the stack!
@@ -66,8 +42,11 @@ void Riscv::asyncContextSwitch(bool putOldThreadInSchedule)
     writeSepc(sepc);
 }
 
-void Riscv::handleSoftwareInterrupt()
+void Riscv::handleTimerTrap()
 {
+    // Clear interrupt pending bit
+    maskClearSip(SIP_SSIP);
+
     if(TCB::running == nullptr) return;
 
     TCB::timeSliceCounter++;
@@ -84,13 +63,19 @@ void Riscv::handleSoftwareInterrupt()
     }
 }
 
-void Riscv::handleExternalInterrupt()
+void Riscv::handleExternalTrap()
 {
+    // Clear interrupt pending bit
+    maskClearSip(SIP_SSIP);
+
     console_handler();
 }
 
-void Riscv::handleEcall()
+void Riscv::handleEcallTrap()
 {
+    // Clear interrupt pending bit
+    maskClearSip(SIP_SSIP);
+
     if(kernelLock) return;
 
     // Ecall will have a sepc that points back to ecall, so we want to return to the
@@ -127,7 +112,7 @@ void Riscv::handleSystemCalls()
     uint64 volatile sysCallCode;
     __asm__ volatile ("mv %[outCode], a0" : [outCode] "=r" (sysCallCode));
 
-    switch (sysCallCode) // NOLINT(hicpp-multiway-paths-covered)
+    switch (sysCallCode)
     {
         case SYS_CALL_MEM_ALLOC:
             handleMemAlloc();
@@ -159,6 +144,8 @@ void Riscv::handleSystemCalls()
         case SYS_CALL_SEM_SIGNAL:
             handleSemaphoreSignal();
             break;
+        default:
+            handleUnknownTrapCause(readScause());
     }
 }
 

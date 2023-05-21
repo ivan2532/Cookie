@@ -68,7 +68,7 @@ int main()
 {
     // Set our trap handler, save the old one so we can restore it after our kernel has finished
     auto oldTrap = Riscv::readStvec();
-    Riscv::writeStvec((uint64) &Riscv::supervisorTrap);
+    Riscv::writeStvec((uint64) &Riscv::supervisorTrap + 1);
 
     // Enable interrupts
     Riscv::maskSetSstatus(Riscv::SSTATUS_SIE);

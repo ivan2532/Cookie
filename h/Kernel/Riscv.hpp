@@ -11,6 +11,7 @@ class Riscv
 {
     friend class TCB;
     friend class SCB;
+    friend int main();
 
 public:
     // Pop sstatus.spp and sstatus.spie bits
@@ -79,16 +80,14 @@ public:
     // Write to sstatus
     static void writeSstatus(uint64 sstatus);
 
-    static void supervisorTrap();
-
     static void lock();
     static void unlock();
 
 private:
-    static void handleSupervisorTrap();
-    inline static void handleSoftwareInterrupt();
-    inline static void handleExternalInterrupt();
-    inline static void handleEcall();
+    static void supervisorTrap();
+    static void handleEcallTrap();
+    static void handleTimerTrap();
+    static void handleExternalTrap();
     inline static void handleUnknownTrapCause(uint64 scause);
 
     inline static void handleSystemCalls();
