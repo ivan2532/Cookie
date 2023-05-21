@@ -17,11 +17,6 @@ public:
         while(true)
         {
             m_CounterA++;
-            Riscv::lock();
-            printString("Counter A: ");
-            printInteger(m_CounterA);
-            printString("\n");
-            Riscv::unlock();
 
             m_SemaphoreA.signal();
             if(m_CounterA == 2147483640) break;
@@ -54,11 +49,6 @@ public:
             m_SemaphoreA.wait();
 
             m_CounterB++;
-            Riscv::lock();
-            printString("Counter B: ");
-            printInteger(m_CounterB);
-            printString("\n");
-            Riscv::unlock();
 
             m_SemaphoreB.signal();
             if(m_CounterB == 2147483640) break;
