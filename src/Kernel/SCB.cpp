@@ -32,12 +32,12 @@ SCB::~SCB()
 void SCB::block()
 {
     blockedQueue.addLast(TCB::running, true);
-    TCB::dispatch(false);
+    Riscv::asyncContextSwitch(false);
 }
 
 void SCB::unblock()
 {
     auto threadToUnblock = blockedQueue.removeFirst(true);
     Scheduler::put(threadToUnblock, true, true);
-    TCB::dispatch();
+    Riscv::asyncContextSwitch();
 }

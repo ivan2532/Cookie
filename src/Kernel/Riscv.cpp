@@ -8,6 +8,7 @@
 #include "../../h/Kernel/SCB.hpp"
 
 bool Riscv::kernelLock = false;
+bool Riscv::dispatchOnUnlock = false;
 
 void Riscv::lock()
 {
@@ -17,6 +18,7 @@ void Riscv::lock()
 void Riscv::unlock()
 {
     kernelLock = false;
+    if(dispatchOnUnlock) asyncContextSwitch();
 }
 
 void Riscv::returnFromSystemCall()
@@ -29,8 +31,6 @@ void Riscv::handleSupervisorTrap()
 {
     // Clear interrupt pending bit
     maskClearSip(SIP_SSIP);
-
-    if(kernelLock) return;
 
     switch (auto scause = Riscv::readScause())
     {
@@ -51,33 +51,48 @@ void Riscv::handleSupervisorTrap()
     }
 }
 
-inline void Riscv::handleSoftwareInterrupt()
+void Riscv::asyncContextSwitch(bool putOldThreadInSchedule)
+{
+    // Save important supervisor registers on the stack!
+    auto volatile sepc = readSepc();
+    auto volatile sstatus = readSstatus();
+
+    TCB::timeSliceCounter = 0;
+
+    TCB::dispatch(putOldThreadInSchedule);
+
+    // Restore important supervisor registers
+    writeSstatus(sstatus);
+    writeSepc(sepc);
+}
+
+void Riscv::handleSoftwareInterrupt()
 {
     if(TCB::running == nullptr) return;
 
     TCB::timeSliceCounter++;
+
     if(TCB::timeSliceCounter >= TCB::running->m_timeSlice)
     {
-        // Save important supervisor registers on the stack!
-        auto volatile sepc = readSepc();
-        auto volatile sstatus = readSstatus();
+        if(kernelLock)
+        {
+            dispatchOnUnlock = true;
+            return;
+        }
 
-        TCB::timeSliceCounter = 0;
-        TCB::dispatch();
-
-        // Restore important supervisor registers
-        writeSstatus(sstatus);
-        writeSepc(sepc);
+        asyncContextSwitch();
     }
 }
 
-inline void Riscv::handleExternalInterrupt()
+void Riscv::handleExternalInterrupt()
 {
     console_handler();
 }
 
-inline void Riscv::handleEcall()
+void Riscv::handleEcall()
 {
+    if(kernelLock) return;
+
     // Ecall will have a sepc that points back to ecall, so we want to return to the
     // instruction after that ecall
     constexpr auto EcallInstructionSize = 4;
@@ -93,7 +108,7 @@ inline void Riscv::handleEcall()
     writeSepc(sepc);
 }
 
-inline void Riscv::handleUnknownTrapCause(uint64 scause)
+void Riscv::handleUnknownTrapCause(uint64 scause)
 {
     printString("\nscause: ");
     printInteger(scause);
@@ -107,7 +122,7 @@ inline void Riscv::handleUnknownTrapCause(uint64 scause)
     printInteger(stval);
 }
 
-inline void Riscv::handleSystemCalls()
+void Riscv::handleSystemCalls()
 {
     uint64 volatile sysCallCode;
     __asm__ volatile ("mv %[outCode], a0" : [outCode] "=r" (sysCallCode));
@@ -147,7 +162,7 @@ inline void Riscv::handleSystemCalls()
     }
 }
 
-inline void Riscv::handleMemAlloc()
+void Riscv::handleMemAlloc()
 {
     // Get arguments
     size_t volatile sizeArg;
@@ -159,7 +174,7 @@ inline void Riscv::handleMemAlloc()
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
 }
 
-inline void Riscv::handleMemFree()
+void Riscv::handleMemFree()
 {
     void* volatile ptrArg;
 
@@ -172,7 +187,7 @@ inline void Riscv::handleMemFree()
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
 }
 
-inline void Riscv::handleThreadCreate()
+void Riscv::handleThreadCreate()
 {
     TCB::Body volatile routine;
     void* volatile args;
@@ -199,7 +214,7 @@ inline void Riscv::handleThreadCreate()
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
 }
 
-inline void Riscv::handleThreadExit()
+void Riscv::handleThreadExit()
 {
     auto returnValue = TCB::deleteThread(TCB::running);
 
@@ -207,13 +222,13 @@ inline void Riscv::handleThreadExit()
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
 }
 
-inline void Riscv::handleThreadDispatch()
+void Riscv::handleThreadDispatch()
 {
     TCB::timeSliceCounter = 0;
     TCB::dispatch();
 }
 
-inline void Riscv::handleThreadJoin()
+void Riscv::handleThreadJoin()
 {
     TCB* volatile handle;
 

@@ -4,8 +4,9 @@
 #include "../../h/Kernel/print.hpp"
 #include "../../h/Kernel/Riscv.hpp"
 #include "../../h/Kernel/semaphoreTestThreads.h"
+#include "../../h/Kernel/infiniteThreadsTest.hpp"
 
-void threadsTest()
+void workersTest()
 {
     // Create and start worker threads, createThread will add them to the Scheduler
     Thread workerA(workerBodyA, nullptr);
@@ -25,6 +26,21 @@ void threadsTest()
     workerB.join();
     workerC.join();
     workerD.join();
+}
+
+void infiniteThreadsTest()
+{
+    InfiniteThreadA infiniteThreadA;
+    InfiniteThreadB infiniteThreadB;
+    InfiniteThreadC infiniteThreadC;
+
+    infiniteThreadA.start();
+    infiniteThreadB.start();
+    infiniteThreadC.start();
+
+    infiniteThreadA.join();
+    infiniteThreadB.join();
+    infiniteThreadC.join();
 }
 
 void semaphoreTest()

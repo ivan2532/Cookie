@@ -10,6 +10,7 @@
 class Riscv
 {
     friend class TCB;
+    friend class SCB;
 
 public:
     // Pop sstatus.spp and sstatus.spie bits
@@ -102,7 +103,10 @@ private:
     inline static void handleSemaphoreWait();
     inline static void handleSemaphoreSignal();
 
+    static void asyncContextSwitch(bool putOldThreadInSchedule = true);
+
     static bool kernelLock;
+    static bool dispatchOnUnlock;
 
     static constexpr uint64 SCAUSE_SOFTWARE_INTERRUPT = 0x8000000000000001UL;
     static constexpr uint64 SCAUSE_EXTERNAL_INTERRUPT = 0x8000000000000009UL;
