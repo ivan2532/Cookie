@@ -45,11 +45,8 @@ void infiniteThreadsTest()
 
 void semaphoreTest()
 {
-    sem_t semaphoreA;
-    sem_open(&semaphoreA, 0);
-
-    sem_t semaphoreB;
-    sem_open(&semaphoreB, 0);
+    Semaphore semaphoreA(0);
+    Semaphore semaphoreB(0);
 
     ThreadA threadA(semaphoreA, semaphoreB);
     ThreadB threadB(semaphoreA, semaphoreB);
@@ -59,9 +56,6 @@ void semaphoreTest()
 
     threadA.join();
     threadB.join();
-
-    sem_close(semaphoreA);
-    sem_close(semaphoreB);
 }
 
 int main()

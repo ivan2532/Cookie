@@ -4,7 +4,7 @@
 class ThreadA : public Thread
 {
 public:
-    ThreadA(sem_t semaphoreA, sem_t semaphoreB)
+    ThreadA(Semaphore& semaphoreA, Semaphore& semaphoreB)
         :
         m_SemaphoreA(semaphoreA),
         m_SemaphoreB(semaphoreB),
@@ -23,23 +23,23 @@ public:
             printString("\n");
             Riscv::unlock();
 
-            sem_signal(m_SemaphoreA);
+            m_SemaphoreA.signal();
             if(m_CounterA == 2147483640) break;
 
-            sem_wait(m_SemaphoreB);
+            m_SemaphoreB.wait();
         }
     }
 
 private:
-    sem_t m_SemaphoreA;
-    sem_t m_SemaphoreB;
+    Semaphore& m_SemaphoreA;
+    Semaphore& m_SemaphoreB;
     int m_CounterA;
 };
 
 class ThreadB : public Thread
 {
 public:
-    ThreadB(sem_t semaphoreA, sem_t semaphoreB)
+    ThreadB(Semaphore& semaphoreA, Semaphore& semaphoreB)
         :
         m_SemaphoreA(semaphoreA),
         m_SemaphoreB(semaphoreB),
@@ -51,7 +51,7 @@ public:
     {
         while(true)
         {
-            sem_wait(m_SemaphoreA);
+            m_SemaphoreA.wait();
 
             m_CounterB++;
             Riscv::lock();
@@ -60,13 +60,13 @@ public:
             printString("\n");
             Riscv::unlock();
 
-            sem_signal(m_SemaphoreB);
+            m_SemaphoreB.signal();
             if(m_CounterB == 2147483640) break;
         }
     }
 
 private:
-    sem_t m_SemaphoreA;
-    sem_t m_SemaphoreB;
+    Semaphore& m_SemaphoreA;
+    Semaphore& m_SemaphoreB;
     int m_CounterB;
 };
