@@ -2,13 +2,17 @@
 
 List<TCB> Scheduler::threadQueue;
 
-TCB *Scheduler::get()
+TCB *Scheduler::get(bool useKernelAllocator)
 {
-    return threadQueue.removeFirst();
+    return threadQueue.removeFirst(useKernelAllocator);
 }
 
-void Scheduler::put(TCB *handle, bool putAtFrontOfQueue)
+void Scheduler::put(TCB* handle, bool putAtFrontOfQueue, bool useKernelAllocator)
 {
-    if(putAtFrontOfQueue) threadQueue.addFirst(handle);
-    else threadQueue.addLast(handle);
+    if(putAtFrontOfQueue) {
+        threadQueue.addFirst(handle, useKernelAllocator);
+    }
+    else {
+        threadQueue.addLast(handle, useKernelAllocator);
+    }
 }

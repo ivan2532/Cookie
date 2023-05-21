@@ -50,9 +50,9 @@ public:
         if(useKernelAlloc)
         {
             newNode = static_cast<Node*>(kernel_alloc(sizeof(Node)));
-            new (newNode) Node(data, head);
+            new (newNode) Node(data, nullptr);
         }
-        else newNode = new Node(data, head);
+        else newNode = new Node(data, nullptr);
 
         if (tail)
         {
@@ -62,16 +62,19 @@ public:
         else head = tail = newNode;
     }
 
-    T* removeFirst()
+    T* removeFirst(bool useKernelFree = false)
     {
         if (!head) return nullptr;
 
-        Node* elem = head;
+        Node* nodeToRemove = head;
         head = head->next;
         if (!head) tail = nullptr;
 
-        T* ret = elem->data;
-        delete elem;
+        T* ret = nodeToRemove->data;
+
+        if(useKernelFree) kernel_free(nodeToRemove);
+        else delete nodeToRemove;
+
         return ret;
     }
 
@@ -81,7 +84,7 @@ public:
         return head->data;
     }
 
-    T* removeLast()
+    T* removeLast(bool useKernelFree = false)
     {
         if (!head) return nullptr;
 
@@ -97,7 +100,10 @@ public:
         tail = prev;
 
         T* ret = nodeToRemove->data;
-        delete nodeToRemove;
+
+        if(useKernelFree) kernel_free(nodeToRemove);
+        else delete nodeToRemove;
+
         return ret;
     }
 

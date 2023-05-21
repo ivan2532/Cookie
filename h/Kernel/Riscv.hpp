@@ -9,6 +9,8 @@
 
 class Riscv
 {
+    friend class TCB;
+
 public:
     // Pop sstatus.spp and sstatus.spie bits
     // (has to be a non inline function because we need ra)
@@ -80,9 +82,6 @@ public:
 
     static void lock();
     static void unlock();
-
-    static void atomicPrintString(const char*);
-    static void atomicPrintInteger(uint64);
 
 private:
     static void handleSupervisorTrap();

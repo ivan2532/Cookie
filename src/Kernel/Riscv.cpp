@@ -255,8 +255,7 @@ void Riscv::handleSemaphoreClose()
     // Get arguments
     __asm__ volatile ("mv %[outHandle], s1" : [outHandle] "=r" (handle));
 
-    delete handle;
-    auto returnValue = 0;
+    auto returnValue = kernel_free(handle);
 
     // Store results in A0
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
@@ -294,18 +293,4 @@ void Riscv::handleSemaphoreSignal()
 
     // Store results in A0
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
-}
-
-void Riscv::atomicPrintString(const char * string)
-{
-    lock();
-    printString(string);
-    unlock();
-}
-
-void Riscv::atomicPrintInteger(uint64 integer)
-{
-    lock();
-    printInteger(integer);
-    unlock();
 }

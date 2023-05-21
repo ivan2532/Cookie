@@ -25,10 +25,8 @@ void TCB::bodyWrapper()
 void TCB::getNewRunning()
 {
     // Get first ready thread that is not suspended
-    do running = Scheduler::get();
+    do running = Scheduler::get(true);
     while(suspendedThreads.contains(running));
-
-    printString("");
 }
 
 void TCB::dispatch(bool putOldThreadInScheduler)
@@ -38,11 +36,11 @@ void TCB::dispatch(bool putOldThreadInScheduler)
     // We don't want to put suspended threads into the Scheduler
     if(putOldThreadInScheduler && !old->m_Finished)
     {
-        Scheduler::put(old);
+        Scheduler::put(old,false,true);
     }
     getNewRunning();
 
-    TCB::contextSwitch(&old->m_Context, &running->m_Context);
+    TCB::contextSwitch(&old->m_Context, &running->m_Context, &Riscv::kernelLock);
 }
 
 int TCB::deleteThread(TCB* handle)
@@ -66,7 +64,7 @@ int TCB::deleteThread(TCB* handle)
     if(handleIsRunning)
     {
         getNewRunning();
-        TCB::contextSwitch(nullptr, &running->m_Context);
+        TCB::contextSwitch(nullptr, &running->m_Context, &Riscv::kernelLock);
     }
 
     return 0;

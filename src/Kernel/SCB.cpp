@@ -21,27 +21,23 @@ void SCB::signal()
 
 SCB::~SCB()
 {
-    auto current = blockedQueue.removeFirst();
+    auto current = blockedQueue.removeFirst(true);
     while(current != nullptr)
     {
-        Scheduler::put(current);
-        current = blockedQueue.removeFirst();
+        Scheduler::put(current, false, true);
+        current = blockedQueue.removeFirst(true);
     }
 }
 
 void SCB::block()
 {
     blockedQueue.addLast(TCB::running, true);
-
-    Riscv::unlock();
     TCB::dispatch(false);
 }
 
 void SCB::unblock()
 {
-    auto threadToUnblock = blockedQueue.removeFirst();
-    Scheduler::put(threadToUnblock, true);
-
-    Riscv::unlock();
+    auto threadToUnblock = blockedQueue.removeFirst(true);
+    Scheduler::put(threadToUnblock, true, true);
     TCB::dispatch();
 }

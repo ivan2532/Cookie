@@ -66,7 +66,8 @@ private:
 
     static void bodyWrapper();
 
-    static void contextSwitch(Context* oldContext, Context* newContext);
+    static void contextSwitch(Context* oldContext, Context* newContext, bool* kernelLock);
+
     static void getNewRunning();
     static void dispatch(bool putOldThreadInScheduler = true);
     static int deleteThread(TCB* handle);
