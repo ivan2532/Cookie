@@ -34,9 +34,9 @@ int thread_create(thread_t* handle, void(*start_routine)(void*), void* arg)
     // Save handle to A7, it will be overwritten by kernel_alloc
     __asm__ volatile ("mv a7, a0");
 
-    // TODO: Take into account kernel stack!
     // Allocate stack for thread, A1 will be overwritten here
-    void* stack = kernel_alloc(DEFAULT_STACK_SIZE);
+    #define STACK_CONTEXT_EXTENSION 256
+    void* stack = kernel_alloc(DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION);
     if(stack == 0) return -1;
 
     // Restore handle from A7
