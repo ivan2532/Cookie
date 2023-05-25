@@ -7,46 +7,23 @@
 */
 
 #include "../../h/C_API/syscall_c.hpp"
-#include "../../h/Kernel/Riscv.hpp"
 #include "../../h/Kernel/kernel_allocator.h"
 
-// Allocate a memory block of "size" bytes on the heap.
-void* mem_alloc(size_t size)
+void* systemCall(uint64 systemCallCode, ...)
 {
-    // Store arguments starting from A1
-    __asm__ volatile ("mv a1, a0");
-
-    // Store the system call code in register A0
-    __asm__ volatile ("li a0, 0x01");
-
-    // Generate interrupt
+    // Arguments will already be stored in a0, ..., an
     __asm__ volatile ("ecall");
 
     // Get the return value after ECALL
-    void* volatile returnValue = 0;
+    void* volatile returnValue;
     __asm__ volatile ("mv %[outReturn], a0" : [outReturn] "=r" (returnValue));
 
     return returnValue;
 }
 
-// Free memory allocated by __mem_alloc
-int mem_free(void* ptr)
-{
-    // Store arguments starting from A1
-    __asm__ volatile ("mv a1, a0");
+void* mem_alloc(size_t size) { return systemCall(0x01, size); }
 
-    // Store the system call code in register A0
-    __asm__ volatile ("li a0, 0x02");
-
-    // Generate interrupt
-    __asm__ volatile ("ecall");
-
-    // Get the return value after ECALL
-    int volatile returnValue;
-    __asm__ volatile ("mv %[outReturn], a0" : [outReturn] "=r" (returnValue));
-
-    return returnValue;
-}
+int mem_free(void* ptr) { return *(int*)systemCall(0x02, ptr); }
 
 int thread_create(thread_t* handle, void(*start_routine)(void*), void* arg)
 {
@@ -54,16 +31,16 @@ int thread_create(thread_t* handle, void(*start_routine)(void*), void* arg)
     __asm__ volatile ("mv a3, a2");
     __asm__ volatile ("mv a2, a1");
 
-    // Save handle to S1, it will be overwritten by kernel_alloc
-    __asm__ volatile ("mv s1, a0");
+    // Save handle to A7, it will be overwritten by kernel_alloc
+    __asm__ volatile ("mv a7, a0");
 
     // TODO: Take into account kernel stack!
     // Allocate stack for thread, A1 will be overwritten here
     void* stack = kernel_alloc(DEFAULT_STACK_SIZE);
     if(stack == 0) return -1;
 
-    // Restore handle from S1
-    __asm__ volatile ("mv a1, s1");
+    // Restore handle from A7
+    __asm__ volatile ("mv a1, a7");
 
     // Store stack argument to A6 (A4 will get overwritten by some local variable)
     __asm__ volatile ("mv a6, %[inStack]" : : [inStack] "r" (stack));
@@ -85,111 +62,16 @@ int thread_create(thread_t* handle, void(*start_routine)(void*), void* arg)
     return returnValue;
 }
 
-int thread_exit()
-{
-    // Store the system call code in register a0
-    __asm__ volatile ("li a0, 0x12");
+int thread_exit() { return *(int*)systemCall(0x12); }
 
-    // Generate interrupt
-    __asm__ volatile ("ecall");
+void thread_dispatch() { systemCall(0x13); }
 
-    // Get the return value after ECALL
-    int volatile returnValue;
-    __asm__ volatile ("mv %[outReturn], a0" : [outReturn] "=r" (returnValue));
+void thread_join(thread_t handle) { systemCall(0x14, handle); }
 
-    return returnValue;
-}
+int sem_open(sem_t* handle, unsigned init) { return *(int*) systemCall(0x21, handle, init); }
 
-void thread_dispatch()
-{
-    // Store the system call code in register a0
-    __asm__ volatile ("li a0, 0x13");
+int sem_close(sem_t handle) { return *(int*)systemCall(0x22, handle); }
 
-    // Generate interrupt
-    __asm__ volatile ("ecall");
-}
+int sem_wait(sem_t id) { return *(int*)systemCall(0x23, id); }
 
-void thread_join(thread_t handle)
-{
-    // Store arguments starting from A1
-    __asm__ volatile ("mv a1, a0");
-
-    // Store the system call code in register a0
-    __asm__ volatile ("li a0, 0x14");
-
-    // Generate interrupt
-    __asm__ volatile ("ecall");
-}
-
-int sem_open(sem_t* handle, unsigned init)
-{
-    // Move arguments so they start from A1 instead of A0
-    __asm__ volatile ("mv a2, a1");
-    __asm__ volatile ("mv a1, a0");
-
-    // Store the system call code in register A0
-    __asm__ volatile ("li a0, 0x21");
-
-    // Generate interrupt
-    __asm__ volatile ("ecall");
-
-    // Get the return value after ECALL
-    int volatile returnValue;
-    __asm__ volatile ("mv %[outReturn], a0" : [outReturn] "=r" (returnValue));
-
-    return returnValue;
-}
-
-int sem_close(sem_t handle)
-{
-    // Store arguments starting from A1
-    __asm__ volatile ("mv a1, a0");
-
-    // Store the system call code in register a0
-    __asm__ volatile ("li a0, 0x22");
-
-    // Generate interrupt
-    __asm__ volatile ("ecall");
-
-    // Get the return value after ECALL
-    int volatile returnValue;
-    __asm__ volatile ("mv %[outReturn], a0" : [outReturn] "=r" (returnValue));
-
-    return returnValue;
-}
-
-int sem_wait(sem_t id)
-{
-    // Store arguments starting from A1
-    __asm__ volatile ("mv a1, a0");
-
-    // Store the system call code in register a0
-    __asm__ volatile ("li a0, 0x23");
-
-    // Generate interrupt
-    __asm__ volatile ("ecall");
-
-    // Get the return value after ECALL
-    int volatile returnValue;
-    __asm__ volatile ("mv %[outReturn], a0" : [outReturn] "=r" (returnValue));
-
-    return returnValue;
-}
-
-int sem_signal(sem_t id)
-{
-    // Store arguments starting from A1
-    __asm__ volatile ("mv a1, a0");
-
-    // Store the system call code in register a0
-    __asm__ volatile ("li a0, 0x24");
-
-    // Generate interrupt
-    __asm__ volatile ("ecall");
-
-    // Get the return value after ECALL
-    int volatile returnValue;
-    __asm__ volatile ("mv %[outReturn], a0" : [outReturn] "=r" (returnValue));
-
-    return returnValue;
-}
+int sem_signal(sem_t id) { return *(int*)systemCall(0x24, id); }

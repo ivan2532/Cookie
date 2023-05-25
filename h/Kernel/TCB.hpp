@@ -23,6 +23,8 @@ public:
     void waitForThread(TCB* handle);
     void unblockWaitingThread();
 
+    static int sleep(uint64);
+
     ~TCB()
     {
         allThreads.remove(this);
@@ -44,8 +46,9 @@ private:
             (uint64)&bodyWrapper,
             m_Stack != nullptr ? (uint64)&m_Stack[DEFAULT_STACK_SIZE] : 0
          }),
-            m_timeSlice(timeSlice),
-            m_Finished(false)
+            m_TimeSlice(timeSlice),
+            m_Finished(false),
+            m_SleepCounter(0)
     {
         if(body != nullptr) Scheduler::put(this, putAtFrontOfSchedulerQueue);
     }
@@ -60,16 +63,17 @@ private:
     void* m_Args;
     uint64* m_Stack;
     Context m_Context;
-    uint64 m_timeSlice;
+    uint64 m_TimeSlice;
     bool m_Finished;
-    List<TCB> m_waitingThreads;
+    List<TCB> m_WaitingThreads;
+    uint64 m_SleepCounter;
 
     static void bodyWrapper();
 
     static void contextSwitch(Context* oldContext, Context* newContext, volatile bool* kernelLock);
 
     static void getNewRunning();
-    static void dispatch(bool putOldThreadInScheduler = true);
+    static int dispatch(bool putOldThreadInScheduler = true);
     static int deleteThread(TCB* handle);
 
     static uint64 timeSliceCounter;

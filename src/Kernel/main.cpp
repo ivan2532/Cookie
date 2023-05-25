@@ -5,6 +5,7 @@
 #include "../../h/Kernel/Riscv.hpp"
 #include "../../h/Kernel/semaphoreTestThreads.h"
 #include "../../h/Kernel/infiniteThreadsTest.hpp"
+#include "../../h/Kernel/periodicTestThread.hpp"
 
 void workersTest()
 {
@@ -58,6 +59,13 @@ void semaphoreTest()
     threadB.join();
 }
 
+void periodicThreadTest()
+{
+    PeriodicTestThread thread;
+    thread.start();
+    thread.join();
+}
+
 int main()
 {
     // Set our trap handler, save the old one so we can restore it after our kernel has finished
@@ -74,7 +82,7 @@ int main()
     thread_create(&mainThread, nullptr, nullptr);
     printString("Main thread created\n");
 
-    semaphoreTest();
+    periodicThreadTest();
 
     // Delete main thread
     delete mainThread;

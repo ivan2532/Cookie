@@ -29,7 +29,7 @@ void TCB::getNewRunning()
     while(suspendedThreads.contains(running));
 }
 
-void TCB::dispatch(bool putOldThreadInScheduler)
+int TCB::dispatch(bool putOldThreadInScheduler)
 {
     auto old = running;
 
@@ -40,7 +40,13 @@ void TCB::dispatch(bool putOldThreadInScheduler)
     }
     getNewRunning();
 
-    TCB::contextSwitch(&old->m_Context, &running->m_Context, &Riscv::kernelLock);
+    if(running == nullptr || running == old)
+    {
+        running = old;
+        return -1;
+    }
+    else TCB::contextSwitch(&old->m_Context, &running->m_Context, &Riscv::kernelLock);
+    return 0;
 }
 
 int TCB::deleteThread(TCB* handle)
@@ -92,21 +98,42 @@ void TCB::waitForThread(TCB* handle)
     suspendedThreads.addLast(this);
 
     // Add waiting thread that we want to unblock later
-    handle->m_waitingThreads.addLast(this);
+    handle->m_WaitingThreads.addLast(this);
 
-    // Change context and don't put suspended thread into the Scheduler
-    Riscv::contextSwitch(false);
+    if(Riscv::contextSwitch(false) < 0)
+    {
+        // Enable interrupts
+        Riscv::maskSetSstatus(Riscv::SSTATUS_SIE);
+        // Change context and don't put suspended thread into the Scheduler
+        while(true);
+    }
 }
 
 void TCB::unblockWaitingThread()
 {
     // If no thread is waiting, return
-    if(m_waitingThreads.isEmpty()) return;
+    if(m_WaitingThreads.isEmpty()) return;
 
     // Unblock waiting threads
-    while(auto waitingThread = m_waitingThreads.removeFirst())
+    while(auto waitingThread = m_WaitingThreads.removeFirst())
     {
         TCB::suspendedThreads.remove(waitingThread);
         Scheduler::put(waitingThread);
     }
+}
+
+int TCB::sleep(uint64 time)
+{
+    // If thread is already asleep, return -1
+    if(TCB::running->m_SleepCounter > 0) return -1;
+    if(time == 0) return 0;
+
+    TCB::running->m_SleepCounter = time;
+
+    if(Riscv::contextSwitch(false) < 0)
+    {
+        while(TCB::running->m_SleepCounter > 0);
+    }
+
+    return 0;
 }

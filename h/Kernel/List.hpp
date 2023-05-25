@@ -7,7 +7,7 @@
 template<typename T>
 class List
 {
-private:
+public:
     struct Node
     {
         T* data;
@@ -18,8 +18,6 @@ private:
 
     Node* head;
     Node* tail;
-
-public:
     List()
         :
         head(nullptr),

@@ -5,7 +5,7 @@ void SCB::wait()
 {
     Riscv::lock();
 
-    if(--value < 0) block();
+    if(--m_Value < 0) block();
 
     Riscv::unlock();
 }
@@ -14,7 +14,7 @@ void SCB::signal()
 {
     Riscv::lock();
 
-    if(value++ < 0) unblock();
+    if(m_Value++ < 0) unblock();
 
     Riscv::unlock();
 }
@@ -40,4 +40,9 @@ void SCB::unblock()
     auto threadToUnblock = blockedQueue.removeFirst(true);
     Scheduler::put(threadToUnblock, true, true);
     Riscv::contextSwitch();
+}
+
+void SCB::setValue(int value)
+{
+    m_Value = value;
 }

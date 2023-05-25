@@ -9,10 +9,12 @@ class SCB
 public:
     explicit SCB(unsigned startValue = 1)
         :
-        value((int)startValue)
+            m_Value((int)startValue)
     {
     }
     ~SCB();
+
+    void setValue(int value);
 
     void wait();
     void signal();
@@ -21,7 +23,7 @@ protected:
     void block();
     void unblock();
 
-    int value;
+    int m_Value;
 
 private:
     List<TCB> blockedQueue;

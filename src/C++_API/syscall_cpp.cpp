@@ -1,4 +1,5 @@
 #include "../../h/C++_API/syscall_cpp.hpp"
+#include "../../h/Kernel/TCB.hpp"
 
 void* operator new (size_t size)
 {
@@ -71,9 +72,9 @@ void Thread::runWrapper(void *args)
     pThread->run();
 }
 
-int Thread::sleep(time_t)
+int Thread::sleep(time_t time)
 {
-    return -1;
+    return TCB::sleep(time);
 }
 
 Semaphore::Semaphore(unsigned int init)

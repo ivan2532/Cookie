@@ -18,28 +18,22 @@ public:
     // (has to be a non inline function because we need ra)
     static void returnFromSystemCall();
 
-    // Read scause
     static uint64 readScause();
 
-    // Write to scause
     static void writeScause(uint64 scause);
 
-    // Read sepc
     static uint64 readSepc();
 
-    // Write to sepc
+    static void movePcToSepc();
+
     static void writeSepc(uint64 sepc);
 
-    // Read stvec
     static uint64 readStvec();
 
-    // Write to stvec
     static void writeStvec(uint64 stvec);
 
-    // Read stval
     static uint64 readStval();
 
-    // Write to stval
     static void writeStval(uint64 stval);
 
     enum BitMaskSip
@@ -49,16 +43,13 @@ public:
         SIP_SEIP = (1 << 9),
     };
 
-    // Mask set sip
     static void maskSetSip(uint64 mask);
 
     // Clears only the bits covered by the mask in sip register
     static void maskClearSip(uint64 mask);
 
-    // Read sip
     static uint64 readSip();
 
-    // Write sip
     static void writeSip(uint64 sip);
 
     enum BitMaskSstatus
@@ -68,16 +59,12 @@ public:
         SSTATUS_SPP = (1 << 8),
     };
 
-    // Mask set sstatus
     static void maskSetSstatus(uint64 mask);
 
-    // Mask clear sstatus
     static void maskClearSstatus(uint64 mask);
 
-    // Read sstatus
     static uint64 readSstatus();
 
-    // Write to sstatus
     static void writeSstatus(uint64 sstatus);
 
     static void lock();
@@ -102,7 +89,7 @@ private:
     inline static void handleSemaphoreWait();
     inline static void handleSemaphoreSignal();
 
-    static void contextSwitch(bool putOldThreadInSchedule = true);
+    static int contextSwitch(bool putOldThreadInSchedule = true);
 
     static volatile bool kernelLock;
     static bool dispatchOnUnlock;

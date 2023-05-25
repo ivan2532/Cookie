@@ -27,18 +27,20 @@ void Riscv::returnFromSystemCall()
     __asm__ volatile ("sret");
 }
 
-void Riscv::contextSwitch(bool putOldThreadInSchedule)
+int Riscv::contextSwitch(bool putOldThreadInSchedule)
 {
     // Save important supervisor registers on the stack!
     auto volatile sepc = readSepc();
     auto volatile sstatus = readSstatus();
 
     TCB::timeSliceCounter = 0;
-    TCB::dispatch(putOldThreadInSchedule);
+    if(TCB::dispatch(putOldThreadInSchedule) < 0) return -1;
 
     // Restore important supervisor registers
     writeSstatus(sstatus);
     writeSepc(sepc);
+
+    return 0;
 }
 
 void Riscv::handleTimerTrap()
@@ -48,9 +50,18 @@ void Riscv::handleTimerTrap()
 
     if(TCB::running == nullptr) return;
 
-    TCB::timeSliceCounter++;
+    for(auto it = TCB::allThreads.head; it != nullptr; it = it->next)
+    {
+        if(it->data->m_SleepCounter == 0) continue;
 
-    if(TCB::timeSliceCounter >= TCB::running->m_timeSlice)
+        if(--(it->data->m_SleepCounter) == 0 && !Scheduler::contains(it->data))
+        {
+            Scheduler::put(it->data);
+        }
+    }
+
+    TCB::timeSliceCounter++;
+    if(TCB::timeSliceCounter >= TCB::running->m_TimeSlice)
     {
         if(kernelLock)
         {
@@ -76,6 +87,9 @@ void Riscv::handleEcallTrap()
     maskClearSip(SIP_SSIP);
 
     if(kernelLock) return;
+
+    // Save A4 to A7, it will be overwritten
+    __asm__ volatile ("mv a7, a4");
 
     // Ecall will have a sepc that points back to ecall, so we want to return to the
     // instruction after that ecall
@@ -179,8 +193,8 @@ void Riscv::handleThreadCreate()
     void* volatile args;
     void* volatile stack;
 
-    // Save A1 (handle) to S1, A1 will be overwritten by createThread
-    __asm__ volatile ("mv s1, a1");
+    // Save A1 (handle) to A7, A1 will be overwritten by createThread
+    __asm__ volatile ("mv a7, a1");
 
     // Get other arguments
     __asm__ volatile ("mv %[outRoutine], a2" : [outRoutine] "=r" (routine));
@@ -191,7 +205,7 @@ void Riscv::handleThreadCreate()
 
     // Get handle
     TCB** volatile handle;
-    __asm__ volatile ("mv %[inHandle], s1" : [inHandle] "=r" (handle));
+    __asm__ volatile ("mv %[inHandle], a7" : [inHandle] "=r" (handle));
 
     *handle = newTCB;
     auto returnValue = (*handle == nullptr ? -1 : 0);
@@ -225,8 +239,8 @@ void Riscv::handleThreadJoin()
 
 void Riscv::handleSemaphoreOpen()
 {
-    // Save handle to S1, it will be overwritten by kernel_alloc
-    __asm__ volatile ("mv s1, a1");
+    // Save handle to A7, it will be overwritten by kernel_alloc
+    __asm__ volatile ("mv a7, a1");
 
     auto newSCB = static_cast<SCB*>(kernel_alloc(sizeof(SCB)));
 
@@ -234,7 +248,7 @@ void Riscv::handleSemaphoreOpen()
     unsigned volatile init;
 
     // Get arguments
-    __asm__ volatile ("mv %[outHandle], s1" : [outHandle] "=r" (handle));
+    __asm__ volatile ("mv %[outHandle], a7" : [outHandle] "=r" (handle));
     __asm__ volatile ("mv %[outInit], a2" : [outInit] "=r" (init));
 
     *handle = new (newSCB) SCB(init);
@@ -247,13 +261,13 @@ void Riscv::handleSemaphoreOpen()
 
 void Riscv::handleSemaphoreClose()
 {
-    // Move handle to S1, it can be overwritten by signal()
-    __asm__ volatile ("mv s1, a1");
+    // Move handle to A7, it can be overwritten by signal()
+    __asm__ volatile ("mv a7, a1");
 
     SCB* volatile handle;
 
     // Get arguments
-    __asm__ volatile ("mv %[outHandle], s1" : [outHandle] "=r" (handle));
+    __asm__ volatile ("mv %[outHandle], a7" : [outHandle] "=r" (handle));
 
     auto returnValue = kernel_free(handle);
 
@@ -263,13 +277,13 @@ void Riscv::handleSemaphoreClose()
 
 void Riscv::handleSemaphoreWait()
 {
-    // Move id to S1, it can be overwritten by signal()
-    __asm__ volatile ("mv s1, a1");
+    // Move id to A7, it can be overwritten by signal()
+    __asm__ volatile ("mv a7, a1");
 
     SCB* volatile id;
 
     // Get arguments
-    __asm__ volatile ("mv %[outId], s1" : [outId] "=r" (id));
+    __asm__ volatile ("mv %[outId], a7" : [outId] "=r" (id));
 
     id->wait();
     auto returnValue = 0;
@@ -280,13 +294,13 @@ void Riscv::handleSemaphoreWait()
 
 void Riscv::handleSemaphoreSignal()
 {
-    // Move id to S1, it can be overwritten by signal()
-    __asm__ volatile ("mv s1, a1");
+    // Move id to A7, it can be overwritten by signal()
+    __asm__ volatile ("mv a7, a1");
 
     SCB* volatile id;
 
     // Get arguments
-    __asm__ volatile ("mv %[outId], s1" : [outId] "=r" (id));
+    __asm__ volatile ("mv %[outId], a7" : [outId] "=r" (id));
 
     id->signal();
     auto returnValue = 0;

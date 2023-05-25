@@ -16,3 +16,8 @@ void Scheduler::put(TCB* handle, bool putAtFrontOfQueue, bool useKernelAllocator
         threadQueue.addLast(handle, useKernelAllocator);
     }
 }
+
+bool Scheduler::contains(TCB *handle)
+{
+    return threadQueue.contains(handle);
+}
