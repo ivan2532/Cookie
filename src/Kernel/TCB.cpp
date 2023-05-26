@@ -8,6 +8,7 @@ List<TCB> TCB::allThreads;
 List<TCB> TCB::suspendedThreads;
 TCB* TCB::running = nullptr;
 uint64 TCB::timeSliceCounter = 0;
+TCB* TCB::idleThread = nullptr;
 
 void TCB::bodyWrapper()
 {
@@ -29,7 +30,7 @@ void TCB::getNewRunning()
     while(suspendedThreads.contains(running));
 }
 
-int TCB::dispatch(bool putOldThreadInScheduler)
+void TCB::dispatch(bool putOldThreadInScheduler)
 {
     auto old = running;
 
@@ -40,13 +41,14 @@ int TCB::dispatch(bool putOldThreadInScheduler)
     }
     getNewRunning();
 
-    if(running == nullptr || running == old)
+    if(running == nullptr)
     {
-        running = old;
-        return -1;
+        running = idleThread;
     }
-    else TCB::contextSwitch(&old->m_Context, &running->m_Context, &Riscv::kernelLock);
-    return 0;
+    if(running != old)
+    {
+        TCB::contextSwitch(&old->m_Context, &running->m_Context, &Riscv::kernelLock);
+    }
 }
 
 int TCB::deleteThread(TCB* handle)
@@ -100,13 +102,8 @@ void TCB::waitForThread(TCB* handle)
     // Add waiting thread that we want to unblock later
     handle->m_WaitingThreads.addLast(this);
 
-    if(Riscv::contextSwitch(false) < 0)
-    {
-        // Enable interrupts
-        Riscv::maskSetSstatus(Riscv::SSTATUS_SIE);
-        // Change context and don't put suspended thread into the Scheduler
-        while(true);
-    }
+    // Try to change context
+    Riscv::contextSwitch(false);
 }
 
 void TCB::unblockWaitingThread()
@@ -130,10 +127,12 @@ int TCB::sleep(uint64 time)
 
     TCB::running->m_SleepCounter = time;
 
-    if(Riscv::contextSwitch(false) < 0)
-    {
-        while(TCB::running->m_SleepCounter > 0);
-    }
+    Riscv::contextSwitch(false);
 
     return 0;
+}
+
+void TCB::idleThreadBody(void*)
+{
+    while(true);
 }

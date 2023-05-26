@@ -82,6 +82,9 @@ int main()
     thread_create(&mainThread, nullptr, nullptr);
     printString("Main thread created\n");
 
+    thread_create(&TCB::idleThread, &TCB::idleThreadBody, nullptr);
+    TCB::idleThread->m_TimeSlice = 0;
+
     periodicThreadTest();
 
     // Delete main thread

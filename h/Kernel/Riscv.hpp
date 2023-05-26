@@ -89,7 +89,7 @@ private:
     inline static void handleSemaphoreWait();
     inline static void handleSemaphoreSignal();
 
-    static int contextSwitch(bool putOldThreadInSchedule = true);
+    static void contextSwitch(bool putOldThreadInSchedule = true);
 
     static volatile bool kernelLock;
     static bool dispatchOnUnlock;

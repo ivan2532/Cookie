@@ -9,6 +9,8 @@ class TCB
     friend class Riscv;
     friend class SCB;
 
+    friend int main();
+
 public:
     using Body = void(*)(void*);
 
@@ -36,7 +38,7 @@ private:
     // When creating an initial context, we want ra to point to the body of
     // our thread immediately, and sp will point at the start of the space
     // allocated for the stack
-    TCB(Body body, void* args, uint64 timeSlice, uint64* stack, bool putAtFrontOfSchedulerQueue = false)
+    TCB(Body body, void* args, uint64 timeSlice, uint64* stack, bool putAtFrontOfSchedulerQueue = false, bool putInScheduler = true)
         :
             m_Body(body),
             m_Args(args),
@@ -50,7 +52,7 @@ private:
             m_Finished(false),
             m_SleepCounter(0)
     {
-        if(body != nullptr) Scheduler::put(this, putAtFrontOfSchedulerQueue);
+        if(body != nullptr && putInScheduler) Scheduler::put(this, putAtFrontOfSchedulerQueue);
     }
 
     struct Context
@@ -68,12 +70,15 @@ private:
     List<TCB> m_WaitingThreads;
     uint64 m_SleepCounter;
 
+    static TCB* idleThread;
+    static void idleThreadBody(void*);
+
     static void bodyWrapper();
 
     static void contextSwitch(Context* oldContext, Context* newContext, volatile bool* kernelLock);
 
     static void getNewRunning();
-    static int dispatch(bool putOldThreadInScheduler = true);
+    static void dispatch(bool putOldThreadInScheduler = true);
     static int deleteThread(TCB* handle);
 
     static uint64 timeSliceCounter;

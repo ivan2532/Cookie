@@ -27,20 +27,18 @@ void Riscv::returnFromSystemCall()
     __asm__ volatile ("sret");
 }
 
-int Riscv::contextSwitch(bool putOldThreadInSchedule)
+void Riscv::contextSwitch(bool putOldThreadInSchedule)
 {
     // Save important supervisor registers on the stack!
     auto volatile sepc = readSepc();
     auto volatile sstatus = readSstatus();
 
     TCB::timeSliceCounter = 0;
-    if(TCB::dispatch(putOldThreadInSchedule) < 0) return -1;
+    TCB::dispatch(putOldThreadInSchedule);
 
     // Restore important supervisor registers
     writeSstatus(sstatus);
     writeSepc(sepc);
-
-    return 0;
 }
 
 void Riscv::handleTimerTrap()
@@ -56,7 +54,7 @@ void Riscv::handleTimerTrap()
 
         if(--(it->data->m_SleepCounter) == 0 && !Scheduler::contains(it->data))
         {
-            Scheduler::put(it->data);
+            Scheduler::put(it->data, false, true);
         }
     }
 
