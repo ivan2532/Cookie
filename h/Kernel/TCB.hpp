@@ -76,7 +76,7 @@ private:
 
     static void bodyWrapper();
 
-    static void contextSwitch(Context* oldContext, Context* newContext, volatile bool* kernelLock);
+    static void contextSwitch(Context* oldContext, Context* newContext);
 
     static void getNewRunning();
     static void dispatch(bool putOldThreadInScheduler = true);

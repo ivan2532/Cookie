@@ -67,9 +67,6 @@ public:
 
     static void writeSstatus(uint64 sstatus);
 
-    static void lock();
-    static void unlock();
-
 private:
     static void supervisorTrap();
     static void handleEcallTrap();
@@ -91,9 +88,6 @@ private:
     inline static void handleTimeSleep();
 
     static void contextSwitch(bool putOldThreadInSchedule = true);
-
-    static volatile bool kernelLock;
-    static bool dispatchOnUnlock;
 
     static constexpr uint64 SCAUSE_SOFTWARE_INTERRUPT = 0x8000000000000001UL;
     static constexpr uint64 SCAUSE_EXTERNAL_INTERRUPT = 0x8000000000000009UL;

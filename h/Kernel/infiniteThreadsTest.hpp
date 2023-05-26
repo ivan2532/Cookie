@@ -18,11 +18,9 @@ public:
         while(true)
         {
             m_CounterA++;
-            Riscv::lock();
             printString("Counter A: ");
             printInteger(m_CounterA);
             printString("\n");
-            Riscv::unlock();
         }
     }
 
@@ -40,11 +38,9 @@ public:
         while(true)
         {
             m_CounterB++;
-            Riscv::lock();
             printString("Counter B: ");
             printInteger(m_CounterB);
             printString("\n");
-            Riscv::unlock();
         }
     }
 
@@ -62,11 +58,9 @@ public:
         while(true)
         {
             m_CounterC++;
-            Riscv::lock();
             printString("Counter C: ");
             printInteger(m_CounterC);
             printString("\n");
-            Riscv::unlock();
         }
     }
 

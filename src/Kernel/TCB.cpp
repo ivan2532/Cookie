@@ -50,7 +50,7 @@ void TCB::dispatch(bool putOldThreadInScheduler)
     }
     if(running != old)
     {
-        TCB::contextSwitch(&old->m_Context, &running->m_Context, &Riscv::kernelLock);
+        TCB::contextSwitch(&old->m_Context, &running->m_Context);
     }
 }
 
@@ -75,7 +75,7 @@ int TCB::deleteThread(TCB* handle)
     if(handleIsRunning)
     {
         getNewRunning();
-        TCB::contextSwitch(nullptr, &running->m_Context, &Riscv::kernelLock);
+        TCB::contextSwitch(nullptr, &running->m_Context);
     }
 
     return 0;

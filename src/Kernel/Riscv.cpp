@@ -7,20 +7,6 @@
 #include "../../lib/console.h"
 #include "../../h/Kernel/SCB.hpp"
 
-volatile bool Riscv::kernelLock = false;
-bool Riscv::dispatchOnUnlock = false;
-
-void Riscv::lock()
-{
-    kernelLock = true;
-}
-
-void Riscv::unlock()
-{
-    kernelLock = false;
-    if(dispatchOnUnlock) contextSwitch();
-}
-
 void Riscv::returnFromSystemCall()
 {
     __asm__ volatile ("csrw sepc, ra");
@@ -61,12 +47,6 @@ void Riscv::handleTimerTrap()
     TCB::timeSliceCounter++;
     if(TCB::timeSliceCounter >= TCB::running->m_TimeSlice)
     {
-        if(kernelLock)
-        {
-            dispatchOnUnlock = true;
-            return;
-        }
-
         contextSwitch();
     }
 }
@@ -83,8 +63,6 @@ void Riscv::handleEcallTrap()
 {
     // Clear interrupt pending bit
     maskClearSip(SIP_SSIP);
-
-    if(kernelLock) return;
 
     // Save A4 to A7, it will be overwritten
     __asm__ volatile ("mv a7, a4");
