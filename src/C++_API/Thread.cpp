@@ -1,35 +1,9 @@
 #include "../../h/C++_API/syscall_cpp.hpp"
-#include "../../h/Kernel/TCB.hpp"
-
-void* operator new (size_t size)
-{
-    return mem_alloc(size);
-}
-
-void* operator new[] (size_t size)
-{
-    return mem_alloc(size);
-}
-
-void* operator new (size_t size, void* ptr)
-{
-    return ptr;
-}
-
-void operator delete (void* ptr)
-{
-    mem_free(ptr);
-}
-
-void operator delete[] (void* ptr)
-{
-    mem_free(ptr);
-}
 
 Thread::Thread(void (*body)(void *), void *arg)
-    :
-    body(body),
-    arg(arg)
+        :
+        body(body),
+        arg(arg)
 {
     // Can't create main thread, it gets created by the system
     if(body == nullptr) return;
@@ -61,8 +35,8 @@ void Thread::dispatch()
 }
 
 Thread::Thread()
-    :
-    body(nullptr)
+        :
+        body(nullptr)
 {
 }
 
@@ -75,26 +49,4 @@ void Thread::runWrapper(void *args)
 int Thread::sleep(time_t time)
 {
     return time_sleep(time);
-}
-
-Semaphore::Semaphore(unsigned int init)
-    :
-    myHandle(nullptr)
-{
-    sem_open(&myHandle, init);
-}
-
-Semaphore::~Semaphore()
-{
-    sem_close(myHandle);
-}
-
-int Semaphore::wait()
-{
-    return sem_wait(myHandle);
-}
-
-int Semaphore::signal()
-{
-    return sem_signal(myHandle);
 }

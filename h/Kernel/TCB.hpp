@@ -10,6 +10,7 @@ class TCB
     friend class SCB;
 
     friend int main();
+    friend void PeriodicThread::terminate();
 
 public:
     using Body = void(*)(void*);

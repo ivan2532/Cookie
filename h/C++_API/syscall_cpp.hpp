@@ -23,6 +23,7 @@ public:
 protected:
     Thread();
     virtual void run() { }
+    thread_t getMyHandle() { return myHandle; }
 
 private:
     static void runWrapper(void* args);
@@ -50,6 +51,8 @@ public:
 protected:
     explicit PeriodicThread (time_t period);
     virtual void periodicActivation () {}
+
+    [[noreturn]] void run() override;
 private:
     time_t period;
 };

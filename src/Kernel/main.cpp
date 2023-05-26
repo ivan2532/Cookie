@@ -85,7 +85,7 @@ int main()
     thread_create(&TCB::idleThread, &TCB::idleThreadBody, nullptr);
     TCB::idleThread->m_TimeSlice = 0;
 
-    semaphoreTest();
+    periodicThreadTest();
 
     // Delete main thread
     delete mainThread;

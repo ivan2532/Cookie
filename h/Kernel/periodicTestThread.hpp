@@ -4,25 +4,22 @@
 #include "../C++_API/syscall_cpp.hpp"
 #include "print.hpp"
 
-class PeriodicTestThread : public Thread
+class PeriodicTestThread : public PeriodicThread
 {
 public:
     PeriodicTestThread()
         :
+        PeriodicThread(10),
         m_Counter(0)
     {
     }
 
-    void run() override
+    void periodicActivation() override
     {
-        while(true)
-        {
-            m_Counter++;
-            printString("Counter: ");
-            printInteger(m_Counter);
-            printString("\n");
-            Thread::sleep(10);
-        }
+        m_Counter++;
+        printString("Counter: ");
+        printInteger(m_Counter);
+        printString("\n");
     }
 
 private:
