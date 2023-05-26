@@ -46,13 +46,17 @@
         // Returns 0 if successful, negative value if it fails
         int sem_close(sem_t handle);
 
-        // Wait on the semaphore given by sem_t id
+        // Wait for the semaphore given by sem_t id
         // Returns 0 if successful, negative value if it fails
         int sem_wait(sem_t id);
 
-        // Siganl on the semaphore given by sem_t id
+        // Siganl the semaphore given by sem_t id
         // Returns 0 if successful, negative value if it fails
         int sem_signal(sem_t id);
+
+        typedef unsigned long time_t;
+
+        int time_sleep (time_t time);
 
     #ifdef __cplusplus
     } // extern "C"

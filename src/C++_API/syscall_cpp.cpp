@@ -74,7 +74,7 @@ void Thread::runWrapper(void *args)
 
 int Thread::sleep(time_t time)
 {
-    return TCB::sleep(time);
+    return time_sleep(time);
 }
 
 Semaphore::Semaphore(unsigned int init)

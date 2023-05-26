@@ -9,21 +9,21 @@
 #include "../../h/C_API/syscall_c.hpp"
 #include "../../h/Kernel/kernel_allocator.h"
 
-void* systemCall(uint64 systemCallCode, ...)
+uint64 systemCall(uint64 systemCallCode, ...)
 {
     // Arguments will already be stored in a0, ..., an
     __asm__ volatile ("ecall");
 
     // Get the return value after ECALL
-    void* volatile returnValue;
-    __asm__ volatile ("mv %[outReturn], a0" : [outReturn] "=r" (returnValue));
+    uint64 volatile returnData;
+    __asm__ volatile ("mv %[outReturn], a0" : [outReturn] "=r" (returnData));
 
-    return returnValue;
+    return returnData;
 }
 
-void* mem_alloc(size_t size) { return systemCall(0x01, size); }
+void* mem_alloc(size_t size) { return (void*)systemCall(0x01, size); }
 
-int mem_free(void* ptr) { return *(int*)systemCall(0x02, ptr); }
+int mem_free(void* ptr) { return (int)systemCall(0x02, ptr); }
 
 int thread_create(thread_t* handle, void(*start_routine)(void*), void* arg)
 {
@@ -62,16 +62,18 @@ int thread_create(thread_t* handle, void(*start_routine)(void*), void* arg)
     return returnValue;
 }
 
-int thread_exit() { return *(int*)systemCall(0x12); }
+int thread_exit() { return (int)systemCall(0x12); }
 
 void thread_dispatch() { systemCall(0x13); }
 
 void thread_join(thread_t handle) { systemCall(0x14, handle); }
 
-int sem_open(sem_t* handle, unsigned init) { return *(int*) systemCall(0x21, handle, init); }
+int sem_open(sem_t* handle, unsigned init) { return (int)systemCall(0x21, handle, init); }
 
-int sem_close(sem_t handle) { return *(int*)systemCall(0x22, handle); }
+int sem_close(sem_t handle) { return (int)systemCall(0x22, handle); }
 
-int sem_wait(sem_t id) { return *(int*)systemCall(0x23, id); }
+int sem_wait(sem_t id) { return (int)systemCall(0x23, id); }
 
-int sem_signal(sem_t id) { return *(int*)systemCall(0x24, id); }
+int sem_signal(sem_t id) { return (int)systemCall(0x24, id); }
+
+int time_sleep(time_t time) { return (int)systemCall(0x31, time); }

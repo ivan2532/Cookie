@@ -25,9 +25,12 @@ void TCB::bodyWrapper()
 
 void TCB::getNewRunning()
 {
-    // Get first ready thread that is not suspended
-    do running = Scheduler::get(true);
-    while(suspendedThreads.contains(running));
+    running = Scheduler::get();
+    if(running == TCB::idleThread)
+    {
+        Scheduler::put(running, false);
+        running = Scheduler::get();
+    }
 }
 
 void TCB::dispatch(bool putOldThreadInScheduler)
@@ -37,7 +40,7 @@ void TCB::dispatch(bool putOldThreadInScheduler)
     // We don't want to put suspended threads into the Scheduler
     if(putOldThreadInScheduler && !old->m_Finished)
     {
-        Scheduler::put(old,false,true);
+        Scheduler::put(old, false);
     }
     getNewRunning();
 
@@ -132,7 +135,7 @@ int TCB::sleep(uint64 time)
     return 0;
 }
 
-void TCB::idleThreadBody(void*)
+[[noreturn]] void TCB::idleThreadBody(void*)
 {
     while(true);
 }

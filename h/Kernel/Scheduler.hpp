@@ -11,8 +11,8 @@ private:
     static List<TCB> threadQueue;
 
 public:
-    static TCB *get(bool useKernelAllocator = false);
-    static void put(TCB *handle, bool putAtFrontOfQueue = false, bool useKernelAllocator = false);
+    static TCB *get();
+    static void put(TCB *handle, bool putAtFrontOfQueue = false);
     static bool contains(TCB *handle);
 };
 

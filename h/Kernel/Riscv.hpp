@@ -88,6 +88,7 @@ private:
     inline static void handleSemaphoreClose();
     inline static void handleSemaphoreWait();
     inline static void handleSemaphoreSignal();
+    inline static void handleTimeSleep();
 
     static void contextSwitch(bool putOldThreadInSchedule = true);
 
@@ -109,6 +110,7 @@ private:
     static constexpr uint64 SYS_CALL_SEM_CLOSE = 0x22;
     static constexpr uint64 SYS_CALL_SEM_WAIT = 0x23;
     static constexpr uint64 SYS_CALL_SEM_SIGNAL = 0x24;
+    static constexpr uint64 SYS_CALL_TIME_SLEEP = 0x31;
 };
 
 inline uint64 Riscv::readScause()

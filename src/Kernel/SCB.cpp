@@ -24,7 +24,7 @@ SCB::~SCB()
     auto current = blockedQueue.removeFirst(true);
     while(current != nullptr)
     {
-        Scheduler::put(current, false, true);
+        Scheduler::put(current, false);
         current = blockedQueue.removeFirst(true);
     }
 }
@@ -38,7 +38,7 @@ void SCB::block()
 void SCB::unblock()
 {
     auto threadToUnblock = blockedQueue.removeFirst(true);
-    Scheduler::put(threadToUnblock, true, true);
+    Scheduler::put(threadToUnblock, true);
     Riscv::contextSwitch();
 }
 

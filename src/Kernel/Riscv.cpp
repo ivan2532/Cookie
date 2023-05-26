@@ -54,7 +54,7 @@ void Riscv::handleTimerTrap()
 
         if(--(it->data->m_SleepCounter) == 0 && !Scheduler::contains(it->data))
         {
-            Scheduler::put(it->data, false, true);
+            Scheduler::put(it->data, false);
         }
     }
 
@@ -154,6 +154,9 @@ void Riscv::handleSystemCalls()
             break;
         case SYS_CALL_SEM_SIGNAL:
             handleSemaphoreSignal();
+            break;
+        case SYS_CALL_TIME_SLEEP:
+            handleTimeSleep();
             break;
         default:
             handleUnknownTrapCause(readScause());
@@ -302,6 +305,19 @@ void Riscv::handleSemaphoreSignal()
 
     id->signal();
     auto returnValue = 0;
+
+    // Store results in A0
+    __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
+}
+
+void Riscv::handleTimeSleep()
+{
+    time_t volatile time;
+
+    // Get arguments
+    __asm__ volatile ("mv %[outTime], a1" : [outTime] "=r" (time));
+
+    auto returnValue = TCB::sleep(time);
 
     // Store results in A0
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
