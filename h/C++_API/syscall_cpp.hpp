@@ -48,11 +48,12 @@ private:
 class PeriodicThread : public Thread {
 public:
     void terminate ();
+
 protected:
     explicit PeriodicThread (time_t period);
     virtual void periodicActivation () {}
-
     [[noreturn]] void run() override;
+
 private:
     time_t period;
 };
