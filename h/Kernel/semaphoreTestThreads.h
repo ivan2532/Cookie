@@ -17,7 +17,6 @@ public:
         while(true)
         {
             m_CounterA++;
-
             m_SemaphoreA.signal();
             if(m_CounterA == 2147483640) break;
 
@@ -49,7 +48,6 @@ public:
             m_SemaphoreA.wait();
 
             m_CounterB++;
-
             m_SemaphoreB.signal();
             if(m_CounterB == 2147483640) break;
         }

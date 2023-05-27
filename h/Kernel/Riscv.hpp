@@ -6,12 +6,14 @@
 #define _Riscv_hpp_
 
 #include "../../lib/hw.h"
+#include "../../h/Kernel/List.hpp"
 
 class Riscv
 {
     friend class TCB;
     friend class SCB;
     friend int main();
+    friend char getc();
 
 public:
     // Pop sstatus.spp and sstatus.spie bits
@@ -86,13 +88,10 @@ private:
     inline static void handleSemaphoreWait();
     inline static void handleSemaphoreSignal();
     inline static void handleTimeSleep();
+    inline static void handleGetChar();
+    inline static void handlePutChar();
 
     static void contextSwitch(bool putOldThreadInSchedule = true);
-
-    static constexpr uint64 SCAUSE_SOFTWARE_INTERRUPT = 0x8000000000000001UL;
-    static constexpr uint64 SCAUSE_EXTERNAL_INTERRUPT = 0x8000000000000009UL;
-    static constexpr uint64 SCAUSE_ECALL_USER_MODE = 0x0000000000000008UL;
-    static constexpr uint64 SCAUSE_ECALL_SUPERVISOR_MODE = 0x0000000000000009UL;
 
     static constexpr uint64 SYS_CALL_MEM_ALLOC = 0x01;
     static constexpr uint64 SYS_CALL_MEM_FREE = 0x02;
@@ -105,6 +104,11 @@ private:
     static constexpr uint64 SYS_CALL_SEM_WAIT = 0x23;
     static constexpr uint64 SYS_CALL_SEM_SIGNAL = 0x24;
     static constexpr uint64 SYS_CALL_TIME_SLEEP = 0x31;
+    static constexpr uint64 SYS_CALL_GETC = 0x41;
+    static constexpr uint64 SYS_CALL_PUTC = 0x42;
+
+    static uint64 consoleInputState;
+    static List<char> consoleInputBuffer;
 };
 
 inline uint64 Riscv::readScause()

@@ -7,6 +7,9 @@
 #include "../../lib/console.h"
 #include "../../h/Kernel/SCB.hpp"
 
+uint64 Riscv::consoleInputState = 0;
+List<char> Riscv::consoleInputBuffer;
+
 void Riscv::returnFromSystemCall()
 {
     __asm__ volatile ("csrw sepc, ra");
@@ -56,7 +59,25 @@ void Riscv::handleExternalTrap()
     // Clear interrupt pending bit
     maskClearSip(SIP_SSIP);
 
-    console_handler();
+    auto interruptId = plic_claim();
+
+    // Check if the console generated an interrupt
+    if(interruptId == CONSOLE_IRQ)
+    {
+        auto pStatus = (char*)CONSOLE_STATUS;
+        auto pInData = (char*)CONSOLE_RX_DATA;
+
+        // Read from the controller
+        if(((*pStatus) & CONSOLE_RX_STATUS_BIT) != 0)
+        {
+            // Registered pressed char
+            consoleInputState++;
+            consoleInputBuffer.addLast(new char(*pInData), true);
+            *pStatus = ( (*pStatus) & (~CONSOLE_RX_STATUS_BIT) );
+        }
+    }
+
+    plic_complete(interruptId);
 }
 
 void Riscv::handleEcallTrap()
@@ -135,6 +156,12 @@ void Riscv::handleSystemCalls()
             break;
         case SYS_CALL_TIME_SLEEP:
             handleTimeSleep();
+            break;
+        case SYS_CALL_GETC:
+            handleGetChar();
+            break;
+        case SYS_CALL_PUTC:
+            handlePutChar();
             break;
         default:
             handleUnknownTrapCause(readScause());
@@ -299,4 +326,32 @@ void Riscv::handleTimeSleep()
 
     // Store results in A0
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
+}
+
+void Riscv::handleGetChar()
+{
+    auto curState = consoleInputState;
+
+    // Wait for next input
+    while(consoleInputState == curState);
+
+    auto bufferElement = consoleInputBuffer.removeFirst(true);
+    auto returnValue = *bufferElement;
+    delete bufferElement;
+
+    // Store results in A0
+    __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
+}
+
+void Riscv::handlePutChar()
+{
+    char volatile outputChar;
+
+    // Get arguments
+    __asm__ volatile ("mv %[outChar], a1" : [outChar] "=r" (outputChar));
+
+    auto pStatus = (char*)CONSOLE_STATUS;
+    auto pOutData = (char*)CONSOLE_TX_DATA;
+    *pStatus = ((*pStatus) | CONSOLE_TX_STATUS_BIT);
+    *pOutData = outputChar;
 }

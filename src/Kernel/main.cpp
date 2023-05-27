@@ -6,6 +6,7 @@
 #include "../../h/Kernel/semaphoreTestThreads.h"
 #include "../../h/Kernel/infiniteThreadsTest.hpp"
 #include "../../h/Kernel/periodicTestThread.hpp"
+#include "../../lib/console.h"
 
 void workersTest()
 {
@@ -85,13 +86,17 @@ int main()
     thread_create(&TCB::idleThread, &TCB::idleThreadBody, nullptr);
     TCB::idleThread->m_TimeSlice = 0;
 
-    periodicThreadTest();
+    //workersTest();
+
+    auto input = getc();
+    putc(input);
 
     // Delete main thread
     delete mainThread;
+    printString("Finished\n");
 
     // We are done, restore the old trap
     Riscv::writeStvec(oldTrap);
-    printString("Finished\n");
+
     return 0;
 }

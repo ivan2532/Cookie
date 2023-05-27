@@ -1,6 +1,7 @@
 #include "../../lib/hw.h"
 #include "../../h/C_API/syscall_c.hpp"
 #include "../../h/Kernel/print.hpp"
+#include "../../lib/console.h"
 
 void workerBodyA(void* args)
 {
@@ -12,6 +13,8 @@ void workerBodyA(void* args)
 
         if(i == 8)
         {
+            auto input = __getc();
+            __putc(input);
             thread_exit();
         }
 

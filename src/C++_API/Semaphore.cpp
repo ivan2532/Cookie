@@ -1,8 +1,8 @@
 #include "../../h/C++_API/syscall_cpp.hpp"
 
 Semaphore::Semaphore(unsigned int init)
-        :
-        myHandle(nullptr)
+    :
+    myHandle(nullptr)
 {
     sem_open(&myHandle, init);
 }

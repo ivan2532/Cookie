@@ -8,6 +8,7 @@
 
 #include "../../h/C_API/syscall_c.hpp"
 #include "../../h/Kernel/kernel_allocator.h"
+#include "../../h/Kernel/Riscv.hpp"
 
 uint64 systemCall(uint64 systemCallCode, ...)
 {
@@ -77,3 +78,21 @@ int sem_wait(sem_t id) { return (int)systemCall(0x23, id); }
 int sem_signal(sem_t id) { return (int)systemCall(0x24, id); }
 
 int time_sleep(time_t time) { return (int)systemCall(0x31, time); }
+
+char getc()
+{
+    auto curState = Riscv::consoleInputState;
+
+    // Wait for next input
+    while(Riscv::consoleInputState == curState);
+
+    auto bufferElement = Riscv::consoleInputBuffer.removeFirst(true);
+    auto returnValue = *bufferElement;
+    delete bufferElement;
+
+    return returnValue;
+
+    //return (char)systemCall(0x41);
+}
+
+void putc(char output) { systemCall(0x42, output); }

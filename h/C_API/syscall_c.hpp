@@ -58,6 +58,10 @@
 
         int time_sleep (time_t time);
 
+        char getc ();
+
+        void putc (char output);
+
     #ifdef __cplusplus
     } // extern "C"
     #endif // __cplusplus
