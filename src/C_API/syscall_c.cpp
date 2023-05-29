@@ -37,7 +37,8 @@ int thread_create(thread_t* handle, void(*start_routine)(void*), void* arg)
     __asm__ volatile ("mv a7, a0");
 
     // Allocate stack for thread, A1 will be overwritten here
-    #define STACK_CONTEXT_EXTENSION 256
+    // Stack context extension has enough space for deepest nesting of kernel code
+    #define STACK_CONTEXT_EXTENSION 4096
     void* stack = kernel_alloc(DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION);
     if(stack == 0) return -1;
 

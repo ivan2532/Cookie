@@ -85,7 +85,6 @@ int main()
     // it will gain it's returning Context once it gives the processor to another thread
     thread_t mainThread;
     thread_create(&mainThread, nullptr, nullptr);
-    printString("Main thread created\n");
 
     thread_create(&TCB::idleThread, &TCB::idleThreadBody, nullptr);
     TCB::idleThread->m_TimeSlice = 0;
@@ -97,7 +96,6 @@ int main()
 
     // Delete main thread
     delete mainThread;
-    printString("Finished\n");
 
     // We are done, restore the old trap
     Riscv::writeStvec(oldTrap);

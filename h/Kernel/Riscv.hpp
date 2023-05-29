@@ -7,6 +7,7 @@
 
 #include "../../lib/hw.h"
 #include "../../h/Kernel/List.hpp"
+#include "../../h/Tests/printing.hpp"
 
 class Riscv
 {

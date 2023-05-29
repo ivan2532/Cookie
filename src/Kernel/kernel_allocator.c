@@ -95,7 +95,9 @@ static Block* mergeBlocks(Block* parent, Block* child)
 void* kernel_alloc(size_t size)
 {
     // Can't allocate a block with size 0
-    if(size == 0) return 0;
+    if(size == 0) {
+        return 0;
+    }
 
     // Include the size of the descriptor and align it to MEM_BLOCK_SIZE
     size += sizeof(Block);
