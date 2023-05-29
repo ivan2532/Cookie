@@ -1,6 +1,6 @@
 #include "../../lib/hw.h"
 #include "../../h/C_API/syscall_c.hpp"
-#include "../../h/Kernel/print.hpp"
+#include "../../h/Tests/printing.hpp"
 #include "../../lib/console.h"
 
 void workerBodyA(void* args)
@@ -8,7 +8,7 @@ void workerBodyA(void* args)
     for (uint64 i = 0; i < 10; i++)
     {
         printString("A: i=");
-        printInteger(i);
+        printInt(i);
         printString("\n");
 
         if(i == 8)
@@ -33,7 +33,7 @@ void workerBodyB(void* args)
     for (uint64 i = 0; i < 16; i++)
     {
         printString("B: i=");
-        printInteger(i);
+        printInt(i);
         printString("\n");
         for (uint64 j = 0; j < 10000; j++)
         {
@@ -58,7 +58,7 @@ void workerBodyC(void* args)
     for (; i < 3; i++)
     {
         printString("C: i=");
-        printInteger(i);
+        printInt(i);
         printString("\n");
     }
 
@@ -70,18 +70,18 @@ void workerBodyC(void* args)
     __asm__ ("mv %[t1], t1" : [t1] "=r"(t1));
 
     printString("C: t1=");
-    printInteger(t1);
+    printInt(t1);
     printString("\n");
 
     uint64 result = fibonacci(12);
     printString("C: fibonaci=");
-    printInteger(result);
+    printInt(result);
     printString("\n");
 
     for (; i < 6; i++)
     {
         printString("C: i=");
-        printInteger(i);
+        printInt(i);
         printString("\n");
     }
 }
@@ -92,7 +92,7 @@ void workerBodyD(void* args)
     for (; i < 13; i++)
     {
         printString("D: i=");
-        printInteger(i);
+        printInt(i);
         printString("\n");
     }
 
@@ -102,13 +102,13 @@ void workerBodyD(void* args)
 
     uint64 result = fibonacci(16);
     printString("D: fibonaci=");
-    printInteger(result);
+    printInt(result);
     printString("\n");
 
     for (; i < 16; i++)
     {
         printString("D: i=");
-        printInteger(i);
+        printInt(i);
         printString("\n");
     }
 }

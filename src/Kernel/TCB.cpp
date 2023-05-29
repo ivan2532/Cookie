@@ -1,8 +1,5 @@
 #include "../../h/Kernel/TCB.hpp"
 #include "../../h/Kernel/Riscv.hpp"
-#include "../../h/C++_API/syscall_cpp.hpp"
-#include "../../h/Kernel/kernel_allocator.h"
-#include "../../h/Kernel/print.hpp"
 
 List<TCB> TCB::allThreads;
 List<TCB> TCB::suspendedThreads;

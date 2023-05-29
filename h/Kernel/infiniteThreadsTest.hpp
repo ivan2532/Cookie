@@ -3,7 +3,7 @@
 
 #include "../C++_API/syscall_cpp.hpp"
 #include "Riscv.hpp"
-#include "print.hpp"
+#include "../Tests/printing.hpp"
 
 class InfiniteThreadA : public Thread
 {
@@ -19,7 +19,7 @@ public:
         {
             m_CounterA++;
             printString("Counter A: ");
-            printInteger(m_CounterA);
+            printInt(m_CounterA);
             printString("\n");
         }
     }
@@ -39,7 +39,7 @@ public:
         {
             m_CounterB++;
             printString("Counter B: ");
-            printInteger(m_CounterB);
+            printInt(m_CounterB);
             printString("\n");
         }
     }
@@ -59,7 +59,7 @@ public:
         {
             m_CounterC++;
             printString("Counter C: ");
-            printInteger(m_CounterC);
+            printInt(m_CounterC);
             printString("\n");
         }
     }

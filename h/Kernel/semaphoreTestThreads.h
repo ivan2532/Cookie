@@ -1,5 +1,4 @@
 #include "../C++_API/syscall_cpp.hpp"
-#include "print.hpp"
 
 class ThreadA : public Thread
 {

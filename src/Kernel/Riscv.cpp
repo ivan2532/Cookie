@@ -1,5 +1,5 @@
 #include "../../h/Kernel/Riscv.hpp"
-#include "../../h/Kernel/print.hpp"
+#include "../../h/Tests/printing.hpp"
 #include "../../h/Kernel/TCB.hpp"
 #include "../../h/Kernel/kernel_allocator.h"
 #include "../../h/C++_API/syscall_cpp.hpp"
@@ -58,6 +58,8 @@ void Riscv::handleExternalTrap()
 {
     // Clear interrupt pending bit
     maskClearSip(SIP_SSIP);
+    console_handler();
+    return;
 
     auto interruptId = plic_claim();
 
@@ -106,15 +108,15 @@ void Riscv::handleEcallTrap()
 void Riscv::handleUnknownTrapCause(uint64 scause)
 {
     printString("\nscause: ");
-    printInteger(scause);
+    printInt(scause);
 
     auto volatile sepc = readSepc();
     printString("\nsepc: ");
-    printInteger(sepc);
+    printInt(sepc);
 
     auto volatile stval = readStval();
     printString("\nstval: ");
-    printInteger(stval);
+    printInt(stval);
 }
 
 void Riscv::handleSystemCalls()

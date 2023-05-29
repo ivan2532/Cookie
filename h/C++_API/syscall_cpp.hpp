@@ -58,4 +58,11 @@ private:
     time_t period;
 };
 
+class Console
+{
+public:
+    static char getc ();
+    static void putc (char);
+};
+
 #endif

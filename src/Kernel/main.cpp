@@ -1,12 +1,14 @@
 #include "../../h/C++_API/syscall_cpp.hpp"
 #include "../../h/Kernel/TCB.hpp"
 #include "../../h/Kernel/workers.hpp"
-#include "../../h/Kernel/print.hpp"
+#include "../../h/Tests//printing.hpp"
 #include "../../h/Kernel/Riscv.hpp"
 #include "../../h/Kernel/semaphoreTestThreads.h"
 #include "../../h/Kernel/infiniteThreadsTest.hpp"
 #include "../../h/Kernel/periodicTestThread.hpp"
 #include "../../lib/console.h"
+
+extern void userMain();
 
 void workersTest()
 {
@@ -86,10 +88,8 @@ int main()
     thread_create(&TCB::idleThread, &TCB::idleThreadBody, nullptr);
     TCB::idleThread->m_TimeSlice = 0;
 
-    //workersTest();
-
-    auto input = getc();
-    putc(input);
+    // USER MAIN
+    userMain();
 
     // Delete main thread
     delete mainThread;

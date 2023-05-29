@@ -2,7 +2,7 @@
 #define _PERIODIC_TEST_THREAD_H_
 
 #include "../C++_API/syscall_cpp.hpp"
-#include "print.hpp"
+#include "../Tests/printing.hpp"
 
 class PeriodicTestThread : public PeriodicThread
 {
@@ -18,7 +18,7 @@ public:
     {
         m_Counter++;
         printString("Counter: ");
-        printInteger(m_Counter);
+        printInt(m_Counter);
         printString("\n");
     }
 
