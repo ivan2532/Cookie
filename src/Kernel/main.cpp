@@ -69,6 +69,8 @@ void periodicThreadTest()
     thread.join();
 }
 
+void userMainWrapper(void*) { userMain(); }
+
 int main()
 {
     // Set our trap handler, save the old one so we can restore it after our kernel has finished
@@ -88,8 +90,10 @@ int main()
     thread_create(&TCB::idleThread, &TCB::idleThreadBody, nullptr);
     TCB::idleThread->m_TimeSlice = 0;
 
-    // USER MAIN
-    userMain();
+    // Create user thread
+    thread_t userThread;
+    thread_create(&userThread, userMainWrapper, nullptr);
+    thread_join(userThread);
 
     // Delete main thread
     delete mainThread;
