@@ -1,11 +1,16 @@
 #include "../../h/Kernel/TCB.hpp"
 #include "../../h/Kernel/Riscv.hpp"
+#include "../../h/Kernel/SCB.hpp"
 
 List<TCB> TCB::allThreads;
 List<TCB> TCB::suspendedThreads;
 TCB* TCB::running = nullptr;
+
 uint64 TCB::timeSliceCounter = 0;
+
 TCB* TCB::idleThread = nullptr;
+TCB* TCB::inputThread = nullptr;
+TCB* TCB::outputThread = nullptr;
 
 void TCB::bodyWrapper()
 {
@@ -135,4 +140,29 @@ int TCB::sleep(uint64 time)
 [[noreturn]] void TCB::idleThreadBody(void*)
 {
     while(true);
+}
+
+[[noreturn]] void TCB::inputThreadBody(void*)
+{
+    while(true)
+    {
+        Riscv::inputSemaphore->wait();
+    }
+}
+
+[[noreturn]] void TCB::outputThreadBody(void*)
+{
+    while(true)
+    {
+        Riscv::outputSemaphore->wait();
+
+        auto pOutData = (char*)CONSOLE_TX_DATA;
+
+        auto poppedElement = Riscv::outputBuffer.removeFirst(true);
+        *pOutData = *poppedElement;
+        delete poppedElement;
+
+        auto pStatus = (char*)CONSOLE_STATUS;
+        *pStatus = ((*pStatus) | CONSOLE_TX_STATUS_BIT);
+    }
 }

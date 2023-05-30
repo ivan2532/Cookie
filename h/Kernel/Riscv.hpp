@@ -108,8 +108,12 @@ private:
     static constexpr uint64 SYS_CALL_GETC = 0x41;
     static constexpr uint64 SYS_CALL_PUTC = 0x42;
 
-    static uint64 consoleInputState;
-    static List<char> consoleInputBuffer;
+    static List<char> inputBuffer;
+    static SCB* inputSemaphore;
+
+    static List<char> outputBuffer;
+    static char outputCh;
+    static SCB* outputSemaphore;
 };
 
 inline uint64 Riscv::readScause()

@@ -4,12 +4,20 @@
 #include "../../lib/console.h"
 #include "../../h/Kernel/SCB.hpp"
 
-uint64 Riscv::consoleInputState = 0;
-List<char> Riscv::consoleInputBuffer;
+List<char> Riscv::inputBuffer;
+List<char> Riscv::outputBuffer;
+char Riscv::outputCh = '0';
+
+SCB* Riscv::inputSemaphore;
+SCB* Riscv::outputSemaphore;
 
 void Riscv::returnFromSystemCall()
 {
-    maskClearSstatus(SSTATUS_SPP);
+    if(TCB::running != TCB::inputThread && TCB::running != TCB::outputThread)
+    {
+        maskClearSstatus(SSTATUS_SPP);
+    }
+
     __asm__ volatile ("csrw sepc, ra");
     __asm__ volatile ("sret");
 }
@@ -71,8 +79,7 @@ void Riscv::handleExternalTrap()
         if(((*pStatus) & CONSOLE_RX_STATUS_BIT) != 0)
         {
             // Registered pressed char
-            consoleInputState++;
-            consoleInputBuffer.addLast(new char(*pInData), true);
+            inputBuffer.addLast(new char(*pInData), true);
             *pStatus = ( (*pStatus) & (~CONSOLE_RX_STATUS_BIT) );
         }
     }
@@ -345,9 +352,7 @@ void Riscv::handlePutChar()
     // Get arguments
     __asm__ volatile ("mv %[outChar], a1" : [outChar] "=r" (outputChar));
 
-    __putc(outputChar);
-//    auto pStatus = (char*)CONSOLE_STATUS;
-//    auto pOutData = (char*)CONSOLE_TX_DATA;
-//    *pStatus = ((*pStatus) | CONSOLE_TX_STATUS_BIT);
-//    *pOutData = outputChar;
+    outputBuffer.addLast(new char(outputChar), true);
+
+    outputSemaphore->signal();
 }

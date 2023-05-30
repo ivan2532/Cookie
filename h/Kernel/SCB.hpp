@@ -14,8 +14,6 @@ public:
     }
     ~SCB();
 
-    void setValue(int value);
-
     void wait();
     void signal();
 

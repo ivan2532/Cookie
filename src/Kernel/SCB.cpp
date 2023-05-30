@@ -33,8 +33,3 @@ void SCB::unblock()
     Scheduler::put(threadToUnblock, true);
     Riscv::contextSwitch();
 }
-
-void SCB::setValue(int value)
-{
-    m_Value = value;
-}

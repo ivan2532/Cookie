@@ -80,14 +80,23 @@ int main()
     // Enable interrupts
     Riscv::maskSetSstatus(Riscv::SSTATUS_SIE);
 
+    // Create io semaphores
+    sem_open(&Riscv::inputSemaphore, 0);
+    sem_open(&Riscv::outputSemaphore, 0);
+
     // Create main thread
     // When we create a main thread (specific case when body = nullptr) we don't put it in the Scheduler,
     // it will gain it's returning Context once it gives the processor to another thread
     thread_t mainThread;
     thread_create(&mainThread, nullptr, nullptr);
 
+    // Create idle thread
     thread_create(&TCB::idleThread, &TCB::idleThreadBody, nullptr);
     TCB::idleThread->m_TimeSlice = 0;
+
+    // Create io threads
+    thread_create(&TCB::inputThread, &TCB::inputThreadBody, nullptr);
+    thread_create(&TCB::outputThread, &TCB::outputThreadBody, nullptr);
 
     // Create user thread
     thread_t userThread;
