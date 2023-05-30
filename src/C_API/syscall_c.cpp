@@ -93,18 +93,9 @@ int time_sleep(time_t time) { return (int)systemCall(0x31, time); }
 //    delete bufferElement;
 //
 //    return returnValue;
-//
-//    //return (char)systemCall(0x41);
 //}
-//
-//void putc(char output) { systemCall(0x42, output); }
 
-char getc()
-{
-    return __getc();
-}
 
-void putc(char output)
-{
-    __putc(output);
-}
+char getc() { return (char) systemCall(0x41); }
+
+void putc(char output) { systemCall(0x42, output); }

@@ -1,8 +1,5 @@
 #include "../../h/Kernel/Riscv.hpp"
-#include "../../h/Tests/printing.hpp"
 #include "../../h/Kernel/TCB.hpp"
-#include "../../h/Kernel/kernel_allocator.h"
-#include "../../h/C++_API/syscall_cpp.hpp"
 
 #include "../../lib/console.h"
 #include "../../h/Kernel/SCB.hpp"
@@ -12,6 +9,7 @@ List<char> Riscv::consoleInputBuffer;
 
 void Riscv::returnFromSystemCall()
 {
+    maskClearSstatus(SSTATUS_SPP);
     __asm__ volatile ("csrw sepc, ra");
     __asm__ volatile ("sret");
 }
@@ -117,6 +115,9 @@ void Riscv::handleUnknownTrapCause(uint64 scause)
     auto volatile stval = readStval();
     printString("\nstval: ");
     printInt(stval);
+
+    // Exit QEMU
+    *((unsigned int*)0x100000) = 0x5555;
 }
 
 void Riscv::handleSystemCalls()
@@ -332,14 +333,7 @@ void Riscv::handleTimeSleep()
 
 void Riscv::handleGetChar()
 {
-    auto curState = consoleInputState;
-
-    // Wait for next input
-    while(consoleInputState == curState);
-
-    auto bufferElement = consoleInputBuffer.removeFirst(true);
-    auto returnValue = *bufferElement;
-    delete bufferElement;
+    auto returnValue = __getc();
 
     // Store results in A0
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
