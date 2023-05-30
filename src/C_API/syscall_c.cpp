@@ -81,21 +81,6 @@ int sem_signal(sem_t id) { return (int)systemCall(0x24, id); }
 
 int time_sleep(time_t time) { return (int)systemCall(0x31, time); }
 
-//char getc()
-//{
-//    auto curState = Riscv::consoleInputState;
-//
-//    // Wait for next input
-//    while(Riscv::consoleInputState == curState);
-//
-//    auto bufferElement = Riscv::consoleInputBuffer.removeFirst(true);
-//    auto returnValue = *bufferElement;
-//    delete bufferElement;
-//
-//    return returnValue;
-//}
-
-
 char getc() { return (char) systemCall(0x41); }
 
 void putc(char output) { systemCall(0x42, output); }

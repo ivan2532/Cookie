@@ -116,8 +116,7 @@ void Riscv::handleUnknownTrapCause(uint64 scause)
     printString("\nstval: ");
     printInt(stval);
 
-    // Exit QEMU
-    *((unsigned int*)0x100000) = 0x5555;
+    while(true);
 }
 
 void Riscv::handleSystemCalls()
@@ -346,8 +345,9 @@ void Riscv::handlePutChar()
     // Get arguments
     __asm__ volatile ("mv %[outChar], a1" : [outChar] "=r" (outputChar));
 
-    auto pStatus = (char*)CONSOLE_STATUS;
-    auto pOutData = (char*)CONSOLE_TX_DATA;
-    *pStatus = ((*pStatus) | CONSOLE_TX_STATUS_BIT);
-    *pOutData = outputChar;
+    __putc(outputChar);
+//    auto pStatus = (char*)CONSOLE_STATUS;
+//    auto pOutData = (char*)CONSOLE_TX_DATA;
+//    *pStatus = ((*pStatus) | CONSOLE_TX_STATUS_BIT);
+//    *pOutData = outputChar;
 }
