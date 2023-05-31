@@ -108,12 +108,17 @@ private:
     static constexpr uint64 SYS_CALL_GETC = 0x41;
     static constexpr uint64 SYS_CALL_PUTC = 0x42;
 
-    static List<char> inputBuffer;
-    static SCB* inputSemaphore;
+    static constexpr char InputBufferSize = 20;
+    static char inputBuffer[InputBufferSize];
+    static int inputBufferPointer;
+    static SCB* inputEmptySemaphore;
+    static SCB* inputFullSemaphore;
 
-    static List<char> outputBuffer;
-    static char outputCh;
-    static SCB* outputSemaphore;
+    static constexpr char OutputBufferSize = 20;
+    static char outputBuffer[OutputBufferSize];
+    static int outputBufferPointer;
+    static SCB* outputEmptySemaphore;
+    static SCB* outputFullSemaphore;
 };
 
 inline uint64 Riscv::readScause()

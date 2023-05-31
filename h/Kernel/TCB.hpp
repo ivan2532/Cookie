@@ -72,7 +72,6 @@ private:
     uint64 m_SleepCounter;
 
     static TCB* idleThread;
-    static TCB* inputThread;
     static TCB* outputThread;
 
     [[noreturn]] static void idleThreadBody(void*);

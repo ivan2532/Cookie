@@ -9,7 +9,6 @@ TCB* TCB::running = nullptr;
 uint64 TCB::timeSliceCounter = 0;
 
 TCB* TCB::idleThread = nullptr;
-TCB* TCB::inputThread = nullptr;
 TCB* TCB::outputThread = nullptr;
 
 void TCB::bodyWrapper()
@@ -142,27 +141,17 @@ int TCB::sleep(uint64 time)
     while(true);
 }
 
-[[noreturn]] void TCB::inputThreadBody(void*)
-{
-    while(true)
-    {
-        Riscv::inputSemaphore->wait();
-    }
-}
-
 [[noreturn]] void TCB::outputThreadBody(void*)
 {
     while(true)
     {
-        Riscv::outputSemaphore->wait();
+        Riscv::outputFullSemaphore->wait();
+
+        while(! ( (*(char*)CONSOLE_STATUS) & CONSOLE_TX_STATUS_BIT ) );
 
         auto pOutData = (char*)CONSOLE_TX_DATA;
+        *pOutData = Riscv::outputBuffer[Riscv::outputBufferPointer--];
 
-        auto poppedElement = Riscv::outputBuffer.removeFirst(true);
-        *pOutData = *poppedElement;
-        delete poppedElement;
-
-        auto pStatus = (char*)CONSOLE_STATUS;
-        *pStatus = ((*pStatus) | CONSOLE_TX_STATUS_BIT);
+        Riscv::outputEmptySemaphore->signal();
     }
 }

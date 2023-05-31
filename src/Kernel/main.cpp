@@ -81,8 +81,10 @@ int main()
     Riscv::maskSetSstatus(Riscv::SSTATUS_SIE);
 
     // Create io semaphores
-    sem_open(&Riscv::inputSemaphore, 0);
-    sem_open(&Riscv::outputSemaphore, 0);
+    sem_open(&Riscv::inputEmptySemaphore, Riscv::InputBufferSize);
+    sem_open(&Riscv::inputFullSemaphore, 0);
+    sem_open(&Riscv::outputEmptySemaphore, Riscv::OutputBufferSize);
+    sem_open(&Riscv::outputFullSemaphore, 0);
 
     // Create main thread
     // When we create a main thread (specific case when body = nullptr) we don't put it in the Scheduler,
@@ -94,8 +96,7 @@ int main()
     thread_create(&TCB::idleThread, &TCB::idleThreadBody, nullptr);
     TCB::idleThread->m_TimeSlice = 0;
 
-    // Create io threads
-    thread_create(&TCB::inputThread, &TCB::inputThreadBody, nullptr);
+    // Create io thread
     thread_create(&TCB::outputThread, &TCB::outputThreadBody, nullptr);
 
     // Create user thread

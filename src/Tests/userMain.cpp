@@ -104,5 +104,6 @@ void userMain() {
             break;
         default:
             printString("Niste uneli odgovarajuci broj za test\n");
+            printInt(test);
     }
 }

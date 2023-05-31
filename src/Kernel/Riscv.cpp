@@ -1,22 +1,22 @@
 #include "../../h/Kernel/Riscv.hpp"
 #include "../../h/Kernel/TCB.hpp"
 
-#include "../../lib/console.h"
 #include "../../h/Kernel/SCB.hpp"
+#include "../../lib/console.h"
 
-List<char> Riscv::inputBuffer;
-List<char> Riscv::outputBuffer;
-char Riscv::outputCh = '0';
+char Riscv::inputBuffer[InputBufferSize];
+int Riscv::inputBufferPointer = -1;
+SCB* Riscv::inputEmptySemaphore;
+SCB* Riscv::inputFullSemaphore;
 
-SCB* Riscv::inputSemaphore;
-SCB* Riscv::outputSemaphore;
+char Riscv::outputBuffer[OutputBufferSize];
+int Riscv::outputBufferPointer = -1;
+SCB* Riscv::outputEmptySemaphore;
+SCB* Riscv::outputFullSemaphore;
 
 void Riscv::returnFromSystemCall()
 {
-    if(TCB::running != TCB::inputThread && TCB::running != TCB::outputThread)
-    {
-        maskClearSstatus(SSTATUS_SPP);
-    }
+    if(TCB::running != TCB::outputThread) maskClearSstatus(SSTATUS_SPP);
 
     __asm__ volatile ("csrw sepc, ra");
     __asm__ volatile ("sret");
@@ -64,23 +64,22 @@ void Riscv::handleExternalTrap()
 {
     // Clear interrupt pending bit
     maskClearSip(SIP_SSIP);
-    console_handler();
-    return;
 
     auto interruptId = plic_claim();
 
     // Check if the console generated an interrupt
     if(interruptId == CONSOLE_IRQ)
     {
-        auto pStatus = (char*)CONSOLE_STATUS;
-        auto pInData = (char*)CONSOLE_RX_DATA;
+        auto pStatus = *((char*)CONSOLE_STATUS);
 
         // Read from the controller
-        if(((*pStatus) & CONSOLE_RX_STATUS_BIT) != 0)
+        if((pStatus & CONSOLE_RX_STATUS_BIT) != 0)
         {
-            // Registered pressed char
-            inputBuffer.addLast(new char(*pInData), true);
-            *pStatus = ( (*pStatus) & (~CONSOLE_RX_STATUS_BIT) );
+            auto pInData = *((char*)CONSOLE_RX_DATA);
+
+            inputEmptySemaphore->wait();
+            inputBuffer[++inputBufferPointer] = pInData;
+            inputFullSemaphore->signal();
         }
     }
 
@@ -339,10 +338,14 @@ void Riscv::handleTimeSleep()
 
 void Riscv::handleGetChar()
 {
-    auto returnValue = __getc();
+    Riscv::inputFullSemaphore->wait();
+
+    auto returnValue = inputBuffer[0];
 
     // Store results in A0
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
+
+    Riscv::inputEmptySemaphore->signal();
 }
 
 void Riscv::handlePutChar()
@@ -352,7 +355,7 @@ void Riscv::handlePutChar()
     // Get arguments
     __asm__ volatile ("mv %[outChar], a1" : [outChar] "=r" (outputChar));
 
-    outputBuffer.addLast(new char(outputChar), true);
-
-    outputSemaphore->signal();
+    outputEmptySemaphore->wait();
+    outputBuffer[++outputBufferPointer] = outputChar;
+    outputFullSemaphore->signal();
 }
