@@ -14,6 +14,8 @@ class Riscv
     friend class TCB;
     friend class SCB;
     friend int main();
+    friend void startIO();
+    friend void startUserThread();
     friend char getc();
 
 public:

@@ -8,20 +8,25 @@ TCB* TCB::running = nullptr;
 
 uint64 TCB::timeSliceCounter = 0;
 
+TCB* TCB::mainThread = nullptr;
 TCB* TCB::idleThread = nullptr;
 TCB* TCB::outputThread = nullptr;
+TCB* TCB::userThread = nullptr;
 
 void TCB::bodyWrapper()
 {
     // The thread is created and should start from here, we are still in the supervisor regime
     // Continue program execution from here and return from the trap
-    Riscv::returnFromSystemCall();
+
+    if(!TCB::running->m_KernelThread) Riscv::returnFromSystemCall();
+    else Riscv::maskSetSstatus(Riscv::SSTATUS_SIE);
 
     running->m_Body(running->m_Args);
     running->m_Finished = true;
 
     // Once the thread has finished execution, exit
-    thread_exit();
+    if(running->m_KernelThread) deleteThread(running);
+    else thread_exit();
 }
 
 void TCB::getNewRunning()
@@ -82,15 +87,24 @@ int TCB::deleteThread(TCB* handle)
     return 0;
 }
 
-TCB* TCB::createThread(TCB::Body body, void* args, void* stack)
+TCB* TCB::createThread(TCB::Body body, void* args, void* stack, bool kernelThread)
 {
     auto newTCB = static_cast<TCB*>(kernel_alloc(sizeof(TCB)));
-    new (newTCB) TCB(body, args, DEFAULT_TIME_SLICE, (uint64*)stack, true);
+    new (newTCB) TCB
+    (
+        body,
+        args,
+        DEFAULT_TIME_SLICE,
+        (uint64*)stack,
+        true,
+        true,
+        kernelThread
+    );
 
     // If we are creating the main thread, set it as running
     // All other threads go to TCB::allThreads
     if(body == nullptr) running = newTCB;
-    else allThreads.addLast(newTCB);
+    else allThreads.addLast(newTCB, true);
 
     return newTCB;
 }
@@ -147,10 +161,18 @@ int TCB::sleep(uint64 time)
     {
         Riscv::outputFullSemaphore->wait();
 
-        while(! ( (*(char*)CONSOLE_STATUS) & CONSOLE_TX_STATUS_BIT ) );
+        while(! ( (*(char*)CONSOLE_STATUS) & CONSOLE_TX_STATUS_BIT ) )
+        {
+            Riscv::contextSwitch();
+        }
 
         auto pOutData = (char*)CONSOLE_TX_DATA;
-        *pOutData = Riscv::outputBuffer[Riscv::outputBufferPointer--];
+        *pOutData = Riscv::outputBuffer[0];
+        Riscv::outputBufferPointer--;
+        for(int i = 0; i < Riscv::OutputBufferSize - 1; i++)
+        {
+            Riscv::outputBuffer[i] = Riscv::outputBuffer[i + 1];
+        }
 
         Riscv::outputEmptySemaphore->signal();
     }

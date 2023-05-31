@@ -16,8 +16,7 @@ SCB* Riscv::outputFullSemaphore;
 
 void Riscv::returnFromSystemCall()
 {
-    if(TCB::running != TCB::outputThread) maskClearSstatus(SSTATUS_SPP);
-
+    maskClearSstatus(SSTATUS_SPP);
     __asm__ volatile ("csrw sepc, ra");
     __asm__ volatile ("sret");
 }
@@ -341,11 +340,16 @@ void Riscv::handleGetChar()
     Riscv::inputFullSemaphore->wait();
 
     auto returnValue = inputBuffer[0];
+    Riscv::inputBufferPointer--;
+    for(int i = 0; i < Riscv::InputBufferSize - 1; i++)
+    {
+        Riscv::inputBuffer[i] = Riscv::inputBuffer[i + 1];
+    }
+
+    Riscv::inputEmptySemaphore->signal();
 
     // Store results in A0
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
-
-    Riscv::inputEmptySemaphore->signal();
 }
 
 void Riscv::handlePutChar()

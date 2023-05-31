@@ -10,12 +10,15 @@ class TCB
     friend class SCB;
 
     friend int main();
+    friend void startSystemThreads();
+    friend void startIO();
+    friend void startUserThread();
     friend void PeriodicThread::terminate();
 
 public:
     using Body = void(*)(void*);
 
-    static TCB* createThread(Body body, void* args, void* stack);
+    static TCB* createThread(Body body, void* args, void* stack, bool kernelThread = false);
 
     static List<TCB> allThreads;
     static List<TCB> suspendedThreads;
@@ -39,7 +42,13 @@ private:
     // When creating an initial context, we want ra to point to the body of
     // our thread immediately, and sp will point at the start of the space
     // allocated for the stack
-    TCB(Body body, void* args, uint64 timeSlice, uint64* stack, bool putAtFrontOfSchedulerQueue = false, bool putInScheduler = true)
+    TCB(Body body,
+        void* args,
+        uint64 timeSlice,
+        uint64* stack,
+        bool putAtFrontOfSchedulerQueue = false,
+        bool putInScheduler = true,
+        bool kernelThread = false)
         :
             m_Body(body),
             m_Args(args),
@@ -51,7 +60,8 @@ private:
          }),
             m_TimeSlice(timeSlice),
             m_Finished(false),
-            m_SleepCounter(0)
+            m_SleepCounter(0),
+            m_KernelThread(kernelThread)
     {
         if(body != nullptr && putInScheduler) Scheduler::put(this, putAtFrontOfSchedulerQueue);
     }
@@ -70,12 +80,14 @@ private:
     bool m_Finished;
     List<TCB> m_WaitingThreads;
     uint64 m_SleepCounter;
+    bool m_KernelThread;
 
+    static TCB* mainThread;
     static TCB* idleThread;
     static TCB* outputThread;
+    static TCB* userThread;
 
     [[noreturn]] static void idleThreadBody(void*);
-    [[noreturn]] static void inputThreadBody(void*);
     [[noreturn]] static void outputThreadBody(void*);
 
     static void bodyWrapper();

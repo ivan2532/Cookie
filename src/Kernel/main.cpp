@@ -1,75 +1,72 @@
 #include "../../h/C++_API/syscall_cpp.hpp"
 #include "../../h/Kernel/TCB.hpp"
-#include "../../h/Kernel/workers.hpp"
+#include "../../h/Kernel/SCB.hpp"
 #include "../../h/Tests//printing.hpp"
 #include "../../h/Kernel/Riscv.hpp"
 #include "../../h/Kernel/semaphoreTestThreads.h"
-#include "../../h/Kernel/infiniteThreadsTest.hpp"
-#include "../../h/Kernel/periodicTestThread.hpp"
-#include "../../lib/console.h"
 
 extern void userMain();
 
-void workersTest()
-{
-    // Create and start worker threads, createThread will add them to the Scheduler
-    Thread workerA(workerBodyA, nullptr);
-    printString("WorkerA created\n");
-
-    Thread workerB(workerBodyB, nullptr);
-    printString("WorkerB created\n");
-
-    Thread workerC(workerBodyC, nullptr);
-    printString("WorkerC created\n");
-
-    Thread workerD(workerBodyD, nullptr);
-    printString("WorkerD created\n");
-
-    // Wait for all threads
-    workerA.join();
-    workerB.join();
-    workerC.join();
-    workerD.join();
-}
-
-void infiniteThreadsTest()
-{
-    InfiniteThreadA infiniteThreadA;
-    InfiniteThreadB infiniteThreadB;
-    InfiniteThreadC infiniteThreadC;
-
-    infiniteThreadA.start();
-    infiniteThreadB.start();
-    infiniteThreadC.start();
-
-    infiniteThreadA.join();
-    infiniteThreadB.join();
-    infiniteThreadC.join();
-}
-
-void semaphoreTest()
-{
-    Semaphore semaphoreA(0);
-    Semaphore semaphoreB(0);
-
-    ThreadA threadA(semaphoreA, semaphoreB);
-    ThreadB threadB(semaphoreA, semaphoreB);
-
-    threadB.start();
-    threadA.start();
-
-    threadA.join();
-    threadB.join();
-}
-
-void periodicThreadTest()
-{
-    PeriodicTestThread thread;
-    thread.start();
-    thread.join();
-}
-
 void userMainWrapper(void*) { userMain(); }
+
+inline void startSystemThreads()
+{
+    // Create main thread
+    // When we create the main thread (specific case when body = nullptr) we don't put it in the Scheduler,
+    // it will gain it's returning context once it gives the processor to another thread
+    TCB::mainThread = TCB::createThread(nullptr, nullptr, nullptr, true);
+
+    // Create idle thread
+    auto idleThreadStack = kernel_alloc(DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION);
+    TCB::idleThread = TCB::createThread
+    (
+        &TCB::idleThreadBody,
+        nullptr,
+        idleThreadStack,
+        true
+    );
+    TCB::idleThread->m_TimeSlice = 0;
+    TCB::allThreads.addLast(TCB::idleThread);
+}
+
+inline void startIO()
+{
+    // Create io semaphores
+    Riscv::inputEmptySemaphore = static_cast<SCB*>(kernel_alloc(sizeof(SCB)));
+    new (Riscv::inputEmptySemaphore) SCB(Riscv::InputBufferSize);
+
+    Riscv::inputFullSemaphore = static_cast<SCB*>(kernel_alloc(sizeof(SCB)));
+    new (Riscv::inputFullSemaphore) SCB(0);
+
+    Riscv::outputEmptySemaphore = static_cast<SCB*>(kernel_alloc(sizeof(SCB)));
+    new (Riscv::outputEmptySemaphore) SCB(Riscv::OutputBufferSize);
+
+    Riscv::outputFullSemaphore = static_cast<SCB*>(kernel_alloc(sizeof(SCB)));
+    new (Riscv::outputFullSemaphore) SCB(0);
+
+    // Create io thread
+    auto outputThreadStack = kernel_alloc(DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION);
+    TCB::outputThread = TCB::createThread
+    (
+        &TCB::outputThreadBody,
+        nullptr,
+        outputThreadStack,
+        true
+    );
+    TCB::allThreads.addLast(TCB::outputThread);
+}
+
+inline void startUserThread()
+{
+    // Create user thread
+    auto userThreadStack = kernel_alloc(DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION);
+    TCB::userThread = TCB::createThread(&userMainWrapper, nullptr, userThreadStack);
+    TCB::allThreads.addLast(TCB::userThread);
+    Riscv::contextSwitch();
+
+    // Wait for user thread to finish
+    TCB::running->waitForThread(TCB::userThread);
+}
 
 int main()
 {
@@ -80,34 +77,14 @@ int main()
     // Enable interrupts
     Riscv::maskSetSstatus(Riscv::SSTATUS_SIE);
 
-    // Create io semaphores
-    sem_open(&Riscv::inputEmptySemaphore, Riscv::InputBufferSize);
-    sem_open(&Riscv::inputFullSemaphore, 0);
-    sem_open(&Riscv::outputEmptySemaphore, Riscv::OutputBufferSize);
-    sem_open(&Riscv::outputFullSemaphore, 0);
+    startSystemThreads();
+    startIO();
+    startUserThread();
 
-    // Create main thread
-    // When we create a main thread (specific case when body = nullptr) we don't put it in the Scheduler,
-    // it will gain it's returning Context once it gives the processor to another thread
-    thread_t mainThread;
-    thread_create(&mainThread, nullptr, nullptr);
-
-    // Create idle thread
-    thread_create(&TCB::idleThread, &TCB::idleThreadBody, nullptr);
-    TCB::idleThread->m_TimeSlice = 0;
-
-    // Create io thread
-    thread_create(&TCB::outputThread, &TCB::outputThreadBody, nullptr);
-
-    // Create user thread
-    thread_t userThread;
-    thread_create(&userThread, userMainWrapper, nullptr);
-    thread_join(userThread);
-
-    // Delete main thread
-    delete mainThread;
-
-    // We are done, restore the old trap
+    // We are done, restore the old trap and delete system threads
+    delete TCB::mainThread;
+    delete TCB::idleThread;
+    delete TCB::outputThread;
     Riscv::writeStvec(oldTrap);
 
     return 0;
