@@ -34,6 +34,8 @@ int thread_create(thread_t* handle, void(*start_routine)(void*), void* arg)
 
     // Save handle to A7, it will be overwritten by alloc
     __asm__ volatile ("mv a7, a0");
+    // Save args to A6, it will be overwritten by alloc
+    __asm__ volatile ("mv a6, a3");
 
     // Allocate stack for thread, A1 will be overwritten here
     // Stack context extension has enough space for deepest nesting of kernel code
@@ -42,6 +44,8 @@ int thread_create(thread_t* handle, void(*start_routine)(void*), void* arg)
 
     // Restore handle from A7
     __asm__ volatile ("mv a1, a7");
+    // Restore args from A6
+    __asm__ volatile ("mv a3, a6");
 
     // Store stack argument to A6 (A4 will get overwritten by some local variable)
     __asm__ volatile ("mv a6, %[inStack]" : : [inStack] "r" (stack));

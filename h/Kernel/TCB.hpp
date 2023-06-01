@@ -53,7 +53,7 @@ private:
             m_Stack(body != nullptr ? stack : nullptr),
             m_Context ({
                 (uint64)&bodyWrapper,
-                m_Stack != nullptr ? (uint64)&m_Stack[DEFAULT_STACK_SIZE] : 0
+                m_Stack != nullptr ? (uint64)&(((char*)m_Stack)[DEFAULT_STACK_SIZE]) : 0
              }),
             m_TimeSlice(timeSlice),
             m_Finished(false),

@@ -1,4 +1,5 @@
 #include "../../h/Kernel/MemoryAllocator.hpp"
+#include "../../lib/mem.h"
 
 Block* MemoryAllocator::freeBlocksList = nullptr;
 

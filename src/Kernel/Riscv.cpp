@@ -1,6 +1,7 @@
 #include "../../h/Kernel/Riscv.hpp"
 #include "../../h/Kernel/TCB.hpp"
 #include "../../h/Kernel/SCB.hpp"
+#include "../../lib/console.h"
 
 CharDeque Riscv::inputQueue;
 SCB* volatile Riscv::inputSemaphore;
@@ -19,6 +20,7 @@ void Riscv::handleTimerTrap()
 {
     // Clear interrupt pending bit
     maskClearSip(SIP_SSIP);
+    return;
     if(TCB::running == nullptr) return;
 
     for(auto it = TCB::allThreads.head; it != nullptr; it = it->next)
@@ -51,23 +53,25 @@ void Riscv::handleExternalTrap()
     // Clear interrupt pending bit
     maskClearSip(SIP_SSIP);
 
-    auto interruptId = plic_claim();
+    console_handler();
 
-    // Check if the console generated an interrupt
-    if(interruptId == CONSOLE_IRQ)
-    {
-        auto pStatus = *((char*)CONSOLE_STATUS);
-
-        // Read from the controller
-        if((pStatus & CONSOLE_RX_STATUS_BIT) != 0)
-        {
-            auto pInData = *((char*)CONSOLE_RX_DATA);
-            inputQueue.addLast(pInData);
-            inputSemaphore->signal();
-        }
-    }
-
-    plic_complete(interruptId);
+//    auto interruptId = plic_claim();
+//
+//    // Check if the console generated an interrupt
+//    if(interruptId == CONSOLE_IRQ)
+//    {
+//        auto pStatus = *((char*)CONSOLE_STATUS);
+//
+//        // Read from the controller
+//        if((pStatus & CONSOLE_RX_STATUS_BIT) != 0)
+//        {
+//            auto pInData = *((char*)CONSOLE_RX_DATA);
+//            inputQueue.addLast(pInData);
+//            inputSemaphore->signal();
+//        }
+//    }
+//
+//    plic_complete(interruptId);
 }
 
 void Riscv::handleEcallTrap()
@@ -331,8 +335,10 @@ void Riscv::handleTimeSleep()
 
 void Riscv::handleGetChar()
 {
-    Riscv::inputSemaphore->wait();
-    auto returnValue = inputQueue.removeFirst();
+//    Riscv::inputSemaphore->wait();
+//    auto returnValue = inputQueue.removeFirst();
+
+    auto returnValue = __getc();
 
     // Store results in A0
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
@@ -345,6 +351,8 @@ void Riscv::handlePutChar()
     // Get arguments
     __asm__ volatile ("mv %[outChar], a1" : [outChar] "=r" (outputChar));
 
-    outputQueue.addLast(outputChar);
-    outputSemaphore->signal();
+//    outputQueue.addLast(outputChar);
+//    outputSemaphore->signal();
+
+    __putc(outputChar);
 }

@@ -109,8 +109,9 @@ void TCB::unblockWaitingThread()
     if(m_WaitingThreads.isEmpty()) return;
 
     // Unblock waiting threads
-    while(auto waitingThread = m_WaitingThreads.removeFirst())
+    while(!m_WaitingThreads.isEmpty())
     {
+        auto waitingThread = m_WaitingThreads.removeFirst();
         TCB::suspendedThreads.remove(waitingThread);
         Scheduler::put(waitingThread);
     }
