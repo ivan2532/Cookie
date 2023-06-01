@@ -139,10 +139,7 @@ int TCB::sleep(uint64 time)
     while(true)
     {
         Riscv::outputSemaphore->wait();
-        while(! ( (*(char*)CONSOLE_STATUS) & CONSOLE_TX_STATUS_BIT ) )
-        {
-            thread_dispatch();
-        }
+        Riscv::outputControllerReadySemaphore->wait();
 
         auto pOutData = (char*)CONSOLE_TX_DATA;
         *pOutData = Riscv::outputQueue.removeFirst();

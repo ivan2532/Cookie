@@ -107,6 +107,7 @@ private:
 
     static CharDeque outputQueue;
     static SCB* volatile outputSemaphore;
+    static SCB* volatile outputControllerReadySemaphore;
 };
 
 inline uint64 Riscv::readScause()

@@ -31,8 +31,10 @@ inline void startIO()
     // Create io semaphores
     Riscv::inputSemaphore = static_cast<SCB*>(MemoryAllocator::alloc(sizeof(SCB)));
     Riscv::outputSemaphore = static_cast<SCB*>(MemoryAllocator::alloc(sizeof(SCB)));
+    Riscv::outputControllerReadySemaphore = static_cast<SCB*>(MemoryAllocator::alloc(sizeof(SCB)));
     new (Riscv::inputSemaphore) volatile SCB(0);
     new (Riscv::outputSemaphore) volatile SCB(0);
+    new (Riscv::outputControllerReadySemaphore) volatile SCB(0);
 
     // Create io thread
     auto outputThreadStack = MemoryAllocator::alloc(DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION);
@@ -43,6 +45,9 @@ inline void startIO()
         outputThreadStack,
         true
     );
+
+    // Enable interrupts
+    Riscv::maskSetSstatus(Riscv::SSTATUS_SIE);
     thread_dispatch();
 }
 
@@ -62,9 +67,6 @@ int main()
     // Set our trap handler, save the old one so we can restore it after our kernel has finished
     auto oldTrap = Riscv::readStvec();
     Riscv::writeStvec((uint64) &Riscv::supervisorTrap + 1);
-
-    // Enable interrupts
-    Riscv::maskSetSstatus(Riscv::SSTATUS_SIE);
 
     startSystemThreads();
     startIO();

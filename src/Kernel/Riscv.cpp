@@ -8,6 +8,7 @@ SCB* volatile Riscv::inputSemaphore;
 
 CharDeque Riscv::outputQueue;
 SCB* volatile Riscv::outputSemaphore;
+SCB* volatile Riscv::outputControllerReadySemaphore;
 
 void Riscv::returnFromSystemCall()
 {
@@ -58,6 +59,11 @@ void Riscv::handleExternalTrap()
     if(interruptId == CONSOLE_IRQ)
     {
         auto pStatus = *((char*)CONSOLE_STATUS);
+
+        if((pStatus & CONSOLE_TX_STATUS_BIT) != 0)
+        {
+            outputControllerReadySemaphore->signal();
+        }
 
         // Read from the controller
         if((pStatus & CONSOLE_RX_STATUS_BIT) != 0)
@@ -346,8 +352,8 @@ void Riscv::handlePutChar()
     // Get arguments
     __asm__ volatile ("mv %[outChar], a1" : [outChar] "=r" (outputChar));
 
-//    outputQueue.addLast(outputChar);
-//    outputSemaphore->signal();
+    outputQueue.addLast(outputChar);
+    outputSemaphore->signal();
 
-    __putc(outputChar);
+    //__putc(outputChar);
 }

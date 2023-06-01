@@ -7,8 +7,8 @@ void PeriodicThread::terminate()
 }
 
 PeriodicThread::PeriodicThread(time_t period)
-        :
-        period(period)
+    :
+    period(period)
 {
     start();
 }
