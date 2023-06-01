@@ -1,11 +1,11 @@
-#ifndef _Kernel_List_hpp_
-#define _Kernel_List_hpp_
+#ifndef _Kernel_Deque_hpp_
+#define _Kernel_Deque_hpp_
 
-#include "kernel_allocator.h"
+#include "MemoryAllocator.hpp"
 #include "../C++_API/syscall_cpp.hpp"
 
 template<typename T>
-class KernelList
+class KernelDeque
 {
 public:
     struct Node
@@ -18,19 +18,19 @@ public:
 
     Node* head;
     Node* tail;
-    KernelList()
+    KernelDeque()
         :
         head(nullptr),
         tail(nullptr)
     {
     }
 
-    KernelList(const KernelList<T>&) = delete;
-    KernelList<T>& operator=(const KernelList<T>&) = delete;
+    KernelDeque(const KernelDeque<T>&) = delete;
+    KernelDeque<T>& operator=(const KernelDeque<T>&) = delete;
 
     void addFirst(T data)
     {
-        auto newNode = static_cast<Node*>(kernel_alloc(sizeof(Node)));
+        auto newNode = static_cast<Node*>(MemoryAllocator::alloc(sizeof(Node)));
         new (newNode) Node(data, head);
 
         head = newNode;
@@ -39,7 +39,7 @@ public:
 
     void addLast(T data)
     {
-        auto newNode = static_cast<Node*>(kernel_alloc(sizeof(Node)));
+        auto newNode = static_cast<Node*>(MemoryAllocator::alloc(sizeof(Node)));
         new (newNode) Node(data, nullptr);
 
         if (tail)
@@ -57,11 +57,11 @@ public:
         if (!head) tail = nullptr;
 
         auto ret = nodeToRemove->data;
-        kernel_free(nodeToRemove);
+        MemoryAllocator::free(nodeToRemove);
         return ret;
     }
 
-    T peekFirst()
+    T peekFirst() const
     {
         return head->data;
     }
@@ -80,7 +80,7 @@ public:
         tail = prev;
 
         auto ret = nodeToRemove->data;
-        kernel_free(nodeToRemove);
+        MemoryAllocator::free(nodeToRemove);
         return ret;
     }
 
@@ -105,19 +105,19 @@ public:
             else if(cur == head) head = cur->next;
             else if(cur == tail) tail = prev;
 
-            kernel_free(cur);
+            MemoryAllocator::free(cur);
             return 0;
         }
 
         return -1;
     }
 
-    T peekLast()
+    T peekLast() const
     {
         return tail->data;
     }
 
-    bool contains(T value)
+    bool contains(T value) const
     {
         for (Node* cur = head; cur; cur = cur->next)
         {
@@ -127,7 +127,7 @@ public:
         return false;
     }
 
-    bool isEmpty() { return head == nullptr; }
+    bool isEmpty() const { return head == nullptr; }
 };
 
-#endif // _Kernel_List_hpp_
+#endif // _Kernel_Deque_hpp_

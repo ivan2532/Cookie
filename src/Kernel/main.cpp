@@ -16,7 +16,7 @@ inline void startSystemThreads()
     TCB::mainThread = TCB::createThread(nullptr, nullptr, nullptr, true);
 
     // Create idle thread
-    auto idleThreadStack = kernel_alloc(DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION);
+    auto idleThreadStack = MemoryAllocator::alloc(DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION);
     TCB::idleThread = TCB::createThread
     (
         &TCB::idleThreadBody,
@@ -24,27 +24,18 @@ inline void startSystemThreads()
         idleThreadStack,
         true
     );
-    TCB::idleThread->m_TimeSlice = 0;
-    TCB::allThreads.addLast(TCB::idleThread);
 }
 
 inline void startIO()
 {
     // Create io semaphores
-    Riscv::inputEmptySemaphore = static_cast<SCB*>(kernel_alloc(sizeof(SCB)));
-    new (Riscv::inputEmptySemaphore) SCB(Riscv::InputBufferSize);
-
-    Riscv::inputFullSemaphore = static_cast<SCB*>(kernel_alloc(sizeof(SCB)));
-    new (Riscv::inputFullSemaphore) SCB(0);
-
-    Riscv::outputEmptySemaphore = static_cast<SCB*>(kernel_alloc(sizeof(SCB)));
-    new (Riscv::outputEmptySemaphore) SCB(Riscv::OutputBufferSize);
-
-    Riscv::outputFullSemaphore = static_cast<SCB*>(kernel_alloc(sizeof(SCB)));
-    new (Riscv::outputFullSemaphore) SCB(0);
+    Riscv::inputSemaphore = static_cast<SCB*>(MemoryAllocator::alloc(sizeof(SCB)));
+    Riscv::outputSemaphore = static_cast<SCB*>(MemoryAllocator::alloc(sizeof(SCB)));
+    new (Riscv::inputSemaphore) volatile SCB(0);
+    new (Riscv::outputSemaphore) volatile SCB(0);
 
     // Create io thread
-    auto outputThreadStack = kernel_alloc(DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION);
+    auto outputThreadStack = MemoryAllocator::alloc(DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION);
     TCB::outputThread = TCB::createThread
     (
         &TCB::outputThreadBody,
@@ -52,16 +43,15 @@ inline void startIO()
         outputThreadStack,
         true
     );
-    TCB::allThreads.addLast(TCB::outputThread);
+    thread_dispatch();
 }
 
 inline void startUserThread()
 {
     // Create user thread
-    auto userThreadStack = kernel_alloc(DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION);
+    auto userThreadStack = MemoryAllocator::alloc(DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION);
     TCB::userThread = TCB::createThread(&userMainWrapper, nullptr, userThreadStack);
-    TCB::allThreads.addLast(TCB::userThread);
-    Riscv::contextSwitch();
+    thread_dispatch();
 
     // Wait for user thread to finish
     TCB::running->waitForThread(TCB::userThread);

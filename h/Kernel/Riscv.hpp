@@ -6,8 +6,9 @@
 #define _Riscv_hpp_
 
 #include "../../lib/hw.h"
-#include "../../h/Kernel/KernelList.hpp"
+#include "../../h/Kernel/KernelDeque.hpp"
 #include "../../h/Tests/printing.hpp"
+#include "CharDeque.hpp"
 
 class Riscv
 {
@@ -19,26 +20,18 @@ class Riscv
     friend char getc();
 
 public:
-    // Pop sstatus.spp and sstatus.spie bits
-    // (has to be a non inline function because we need ra)
     static void returnFromSystemCall();
 
     static uint64 readScause();
-
     static void writeScause(uint64 scause);
 
     static uint64 readSepc();
-
-    static void movePcToSepc();
-
     static void writeSepc(uint64 sepc);
 
     static uint64 readStvec();
-
     static void writeStvec(uint64 stvec);
 
     static uint64 readStval();
-
     static void writeStval(uint64 stval);
 
     enum BitMaskSip
@@ -49,12 +42,8 @@ public:
     };
 
     static void maskSetSip(uint64 mask);
-
-    // Clears only the bits covered by the mask in sip register
     static void maskClearSip(uint64 mask);
-
     static uint64 readSip();
-
     static void writeSip(uint64 sip);
 
     enum BitMaskSstatus
@@ -65,19 +54,20 @@ public:
     };
 
     static void maskSetSstatus(uint64 mask);
-
     static void maskClearSstatus(uint64 mask);
-
     static uint64 readSstatus();
-
     static void writeSstatus(uint64 sstatus);
 
 private:
     static void supervisorTrap();
+    static void pushRegisters();
+    static void popRegisters();
+
     static void handleEcallTrap();
     static void handleTimerTrap();
     static void handleExternalTrap();
-    inline static void handleUnknownTrapCause(uint64 scause);
+
+    [[noreturn]] inline static void handleUnknownTrapCause(uint64 scause);
 
     inline static void handleSystemCalls();
     inline static void handleMemAlloc();
@@ -96,6 +86,8 @@ private:
 
     static void contextSwitch(bool putOldThreadInSchedule = true);
 
+    static constexpr uint64 SCAUSE_ECALL_FROM_SUPERVISOR_MODE = 0x0000000000000009UL;
+
     static constexpr uint64 SYS_CALL_MEM_ALLOC = 0x01;
     static constexpr uint64 SYS_CALL_MEM_FREE = 0x02;
     static constexpr uint64 SYS_CALL_THREAD_CREATE = 0x11;
@@ -110,17 +102,11 @@ private:
     static constexpr uint64 SYS_CALL_GETC = 0x41;
     static constexpr uint64 SYS_CALL_PUTC = 0x42;
 
-    static constexpr char InputBufferSize = 20;
-    static char inputBuffer[InputBufferSize];
-    static int inputBufferPointer;
-    static SCB* inputEmptySemaphore;
-    static SCB* inputFullSemaphore;
+    static CharDeque inputQueue;
+    static SCB* volatile inputSemaphore;
 
-    static constexpr char OutputBufferSize = 20;
-    static char outputBuffer[OutputBufferSize];
-    static int outputBufferPointer;
-    static SCB* outputEmptySemaphore;
-    static SCB* outputFullSemaphore;
+    static CharDeque outputQueue;
+    static SCB* volatile outputSemaphore;
 };
 
 inline uint64 Riscv::readScause()

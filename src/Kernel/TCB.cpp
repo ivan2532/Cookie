@@ -2,8 +2,8 @@
 #include "../../h/Kernel/Riscv.hpp"
 #include "../../h/Kernel/SCB.hpp"
 
-KernelList<TCB*> TCB::allThreads;
-KernelList<TCB*> TCB::suspendedThreads;
+KernelDeque<TCB*> TCB::allThreads;
+KernelDeque<TCB*> TCB::suspendedThreads;
 TCB* TCB::running = nullptr;
 
 uint64 TCB::timeSliceCounter = 0;
@@ -29,35 +29,16 @@ void TCB::bodyWrapper()
     else thread_exit();
 }
 
-void TCB::getNewRunning()
-{
-    running = Scheduler::get();
-    if(running == TCB::idleThread)
-    {
-        Scheduler::put(running, false);
-        running = Scheduler::get();
-    }
-}
-
-void TCB::dispatch(bool putOldThreadInScheduler)
+void TCB::dispatch()
 {
     auto old = running;
 
     // We don't want to put suspended threads into the Scheduler
-    if(putOldThreadInScheduler && !old->m_Finished)
-    {
-        Scheduler::put(old, false);
-    }
-    getNewRunning();
+    if(running->m_PutInScheduler && !old->m_Finished) Scheduler::put(old);
+    else running->m_PutInScheduler = true;
+    running = Scheduler::get();
 
-    if(running == nullptr)
-    {
-        running = idleThread;
-    }
-    if(running != old)
-    {
-        TCB::contextSwitch(&old->m_Context, &running->m_Context);
-    }
+    if(running != old) TCB::contextSwitch(&old->m_Context, &running->m_Context);
 }
 
 int TCB::deleteThread(TCB* handle)
@@ -67,7 +48,7 @@ int TCB::deleteThread(TCB* handle)
     // Handle deletion of main thread
     if(handle->m_Body == nullptr)
     {
-        delete handle;
+        MemoryAllocator::free(handle);
         return 0;
     }
 
@@ -75,12 +56,12 @@ int TCB::deleteThread(TCB* handle)
     handle->unblockWaitingThread();
 
     auto handleIsRunning = (running == handle);
-    delete handle;
+    MemoryAllocator::free(handle);
 
     // If we are deleting the running thread, change context and don't save old context
     if(handleIsRunning)
     {
-        getNewRunning();
+        running = Scheduler::get();
         TCB::contextSwitch(nullptr, &running->m_Context);
     }
 
@@ -89,23 +70,20 @@ int TCB::deleteThread(TCB* handle)
 
 TCB* TCB::createThread(TCB::Body body, void* args, void* stack, bool kernelThread)
 {
-    auto newTCB = static_cast<TCB*>(kernel_alloc(sizeof(TCB)));
+    auto newTCB = static_cast<TCB*>(MemoryAllocator::alloc(sizeof(TCB)));
     new (newTCB) TCB
     (
         body,
         args,
         DEFAULT_TIME_SLICE,
         (uint64*)stack,
-        true,
-        true,
         kernelThread
     );
 
     // If we are creating the main thread, set it as running
-    // All other threads go to TCB::allThreads
     if(body == nullptr) running = newTCB;
-    else allThreads.addLast(newTCB);
 
+    allThreads.addLast(newTCB);
     return newTCB;
 }
 
@@ -120,8 +98,9 @@ void TCB::waitForThread(TCB* handle)
     // Add waiting thread that we want to unblock later
     handle->m_WaitingThreads.addLast(this);
 
-    // Try to change context
-    Riscv::contextSwitch(false);
+    // Change context
+    running->m_PutInScheduler = false;
+    thread_dispatch();
 }
 
 void TCB::unblockWaitingThread()
@@ -144,36 +123,27 @@ int TCB::sleep(uint64 time)
     if(time == 0) return 0;
 
     TCB::running->m_SleepCounter = time;
-
-    Riscv::contextSwitch(false);
-
+    TCB::running->m_PutInScheduler = false;
+    thread_dispatch();
     return 0;
 }
 
 [[noreturn]] void TCB::idleThreadBody(void*)
 {
-    while(true);
+    while(true) thread_dispatch();
 }
 
 [[noreturn]] void TCB::outputThreadBody(void*)
 {
     while(true)
     {
-        Riscv::outputFullSemaphore->wait();
-
+        Riscv::outputSemaphore->wait();
         while(! ( (*(char*)CONSOLE_STATUS) & CONSOLE_TX_STATUS_BIT ) )
         {
-            Riscv::contextSwitch();
+            thread_dispatch();
         }
 
         auto pOutData = (char*)CONSOLE_TX_DATA;
-        *pOutData = Riscv::outputBuffer[0];
-        Riscv::outputBufferPointer--;
-        for(int i = 0; i < Riscv::OutputBufferSize - 1; i++)
-        {
-            Riscv::outputBuffer[i] = Riscv::outputBuffer[i + 1];
-        }
-
-        Riscv::outputEmptySemaphore->signal();
+        *pOutData = Riscv::outputQueue.removeFirst();
     }
 }

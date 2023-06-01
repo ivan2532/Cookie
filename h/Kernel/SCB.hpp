@@ -2,14 +2,14 @@
 #define _SCB_hpp_
 
 #include "TCB.hpp"
-#include "KernelList.hpp"
+#include "KernelDeque.hpp"
 
 class SCB
 {
 public:
     explicit SCB(unsigned startValue = 1)
         :
-            m_Value((int)startValue)
+        m_Value((int)startValue)
     {
     }
     ~SCB();
@@ -24,7 +24,7 @@ protected:
     int m_Value;
 
 private:
-    KernelList<TCB*> blockedQueue;
+    KernelDeque<TCB*> blockedQueue;
 };
 
 #endif //_SCB_hpp_

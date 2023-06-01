@@ -1,50 +1,34 @@
-//
-// Kernel implementation of heap memory allocation
-// Helper funcitons marked as static to limit their linking to this translation unit
-//
+#include "../../h/Kernel/MemoryAllocator.hpp"
 
-#include "../../lib/hw.h"
-#include "../../lib/console.h"
+Block* MemoryAllocator::freeBlocksList = nullptr;
 
-typedef struct Block
-{
-    size_t size;
-    struct Block* prev;
-    struct Block* next;
-} Block;
-
-static Block* freeBlocksList = 0;
-
-// Make the first free block (which will be the whole heap) on first allocation.
-static void initFirstBlock()
-{
-    Block* firstBlock = (Block*)HEAP_START_ADDR;
-    firstBlock->size = (HEAP_END_ADDR - 1) - HEAP_START_ADDR;
-    firstBlock->next = 0;
-    freeBlocksList = firstBlock;
-}
-
-// Align given size to MEM_BLOCK_SIZE
-inline static size_t align(size_t size)
+size_t MemoryAllocator::align(size_t size)
 {
     return ((size - 1) / MEM_BLOCK_SIZE + 1) * MEM_BLOCK_SIZE;
 }
 
-// Get a block of needed size from a free block and leave the rest free. Needed size includes the descriptor size.
-static Block* splitFreeBlockAndUpdateFreeList(Block* block, size_t neededSize)
+void MemoryAllocator::initFirstBlock()
+{
+    auto firstBlock = (Block*)HEAP_START_ADDR;
+    firstBlock->size = (char*)HEAP_END_ADDR - (char*)HEAP_START_ADDR + 1;
+    firstBlock->next = nullptr;
+    freeBlocksList = firstBlock;
+}
+
+Block* MemoryAllocator::splitFreeBlockAndUpdateFreeList(Block *block, size_t neededSize)
 {
     if(neededSize % MEM_BLOCK_SIZE != 0 || neededSize > block->size) return 0;
 
     if(block->size - neededSize > 0)
     {
-        void* leftoverBlockAddress = (void*)block + neededSize;
-        Block* leftoverBlock = (Block*)leftoverBlockAddress;
+        auto leftoverBlockAddress = (char*)block + neededSize;
+        auto leftoverBlock = (Block*)leftoverBlockAddress;
         leftoverBlock->size = block->size - neededSize;
         leftoverBlock->prev = block->prev;
         leftoverBlock->next = block->next;
 
-        if(block->next != 0) block->next->prev = leftoverBlock;
-        if(block->prev != 0) block->prev->next = leftoverBlock;
+        if(block->next != nullptr) block->next->prev = leftoverBlock;
+        if(block->prev != nullptr) block->prev->next = leftoverBlock;
         else freeBlocksList = leftoverBlock;
 
         block->size = neededSize;
@@ -52,22 +36,21 @@ static Block* splitFreeBlockAndUpdateFreeList(Block* block, size_t neededSize)
     }
 
     // Remove the allocated block from the list
-    if(block->prev != 0) block->prev->next = block->next;
-    if(block->next != 0) block->next->prev = block->prev;
+    if(block->prev != nullptr) block->prev->next = block->next;
+    if(block->next != nullptr) block->next->prev = block->prev;
     if(freeBlocksList == block) freeBlocksList = block->next;
 
-    block->prev = 0;
-    block->next = 0;
+    block->prev = nullptr;
+    block->next = nullptr;
 
     return block;
 }
 
-// Find the first block in the list of free blocks that is big enough to fit minSize.
-static Block* firstFit(size_t minSize)
+Block* MemoryAllocator::firstFit(size_t minSize)
 {
-    Block* iterator = freeBlocksList;
+    auto iterator = freeBlocksList;
 
-    while (iterator != 0)
+    while (iterator != nullptr)
     {
         if (iterator->size < minSize)
         {
@@ -78,11 +61,10 @@ static Block* firstFit(size_t minSize)
         return iterator;
     }
 
-    return 0;
+    return nullptr;
 }
 
-// Merges child into parent, returns merged block (parent block)
-static Block* mergeBlocks(Block* parent, Block* child)
+Block* MemoryAllocator::mergeBlocks(Block *parent, Block *child)
 {
     parent->size += child->size;
     parent->next = child->next;
@@ -91,41 +73,39 @@ static Block* mergeBlocks(Block* parent, Block* child)
     return parent;
 }
 
-// Allocate a memory block of "size" bytes on the heap.
-void* kernel_alloc(size_t size)
+void* MemoryAllocator::alloc(size_t size)
 {
     // Can't allocate a block with size 0
     if(size == 0) {
-        return 0;
+        return nullptr;
     }
 
     // Include the size of the descriptor and align it to MEM_BLOCK_SIZE
     size += sizeof(Block);
     size = align(size);
 
-    if(freeBlocksList == 0) initFirstBlock();
+    if(freeBlocksList == nullptr) initFirstBlock();
 
     // Find a suitable free block
     Block* blockToAllocate = firstFit(size);
     // Out of memory
-    if(blockToAllocate == 0) return 0;
+    if(blockToAllocate == nullptr) return nullptr;
 
     // Leave the rest of the block that we don't need free and update the list of free blocks
     blockToAllocate = splitFreeBlockAndUpdateFreeList(blockToAllocate, size);
 
     // Return the actual memory pointer after the descriptor
-    return (void*)blockToAllocate + sizeof(Block);
+    return (char*)blockToAllocate + sizeof(Block);
 }
 
-// Free memory allocated by kernel_alloc
-int kernel_free(void* ptr)
+int MemoryAllocator::free(void *ptr)
 {
     // Get the descriptor of the allocated block
-    Block* descriptor = (Block*)(ptr - sizeof(Block));
+    auto descriptor = (Block*)( (char*)ptr - sizeof(Block) );
 
     // Find where to insert the block in the list
     Block* iterator = freeBlocksList;
-    if(iterator == 0)
+    if(iterator == nullptr)
     {
         freeBlocksList = descriptor;
         return 0;
@@ -134,7 +114,7 @@ int kernel_free(void* ptr)
     while(iterator < descriptor)
     {
         // Case where the block to free is the last block
-        if(iterator->next == 0)
+        if(iterator->next == nullptr)
         {
             iterator->next = descriptor;
             descriptor->prev = iterator;
@@ -152,7 +132,7 @@ int kernel_free(void* ptr)
         descriptor->next = iterator;
         descriptor->prev = iterator->prev;
 
-        if(iterator->prev != 0) iterator->prev->next = descriptor;
+        if(iterator->prev != nullptr) iterator->prev->next = descriptor;
         else freeBlocksList = descriptor;
 
         iterator->prev = descriptor;
@@ -162,7 +142,7 @@ int kernel_free(void* ptr)
     Block* blockToMergeWith = descriptor;
 
     // Check if the previous block ends where the current starts
-    if(descriptor->prev && (void*)descriptor->prev + descriptor->prev->size == (void*)descriptor)
+    if(descriptor->prev && (char*)descriptor->prev + descriptor->prev->size == (char*)descriptor)
     {
         blockToMergeWith = descriptor->prev;
         // If the previous block "eats" the current, then we want to merge the next block with the previous block
@@ -170,7 +150,7 @@ int kernel_free(void* ptr)
     }
 
     // Check if the next block starts where the current ends
-    if(descriptor->next && (void*)descriptor->next == (void*)blockToMergeWith + blockToMergeWith->size)
+    if(descriptor->next && (char*)descriptor->next == (char*)blockToMergeWith + blockToMergeWith->size)
     {
         mergeBlocks(blockToMergeWith, descriptor->next);
     }

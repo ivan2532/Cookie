@@ -7,7 +7,7 @@
 */
 
 #include "../../h/C_API/syscall_c.hpp"
-#include "../../h/Kernel/kernel_allocator.h"
+#include "../../h/Kernel/MemoryAllocator.hpp"
 #include "../../h/Kernel/Riscv.hpp"
 
 uint64 systemCall(uint64 systemCallCode, ...)
@@ -32,12 +32,12 @@ int thread_create(thread_t* handle, void(*start_routine)(void*), void* arg)
     __asm__ volatile ("mv a3, a2");
     __asm__ volatile ("mv a2, a1");
 
-    // Save handle to A7, it will be overwritten by kernel_alloc
+    // Save handle to A7, it will be overwritten by alloc
     __asm__ volatile ("mv a7, a0");
 
     // Allocate stack for thread, A1 will be overwritten here
     // Stack context extension has enough space for deepest nesting of kernel code
-    void* stack = kernel_alloc(DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION);
+    void* stack = MemoryAllocator::alloc(DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION);
     if(stack == 0) return -1;
 
     // Restore handle from A7

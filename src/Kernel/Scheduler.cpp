@@ -1,6 +1,6 @@
 #include "../../h/Kernel/Scheduler.hpp"
 
-KernelList<TCB*> Scheduler::threadQueue;
+KernelDeque<TCB*> Scheduler::threadQueue;
 
 TCB *Scheduler::get()
 {
@@ -9,12 +9,8 @@ TCB *Scheduler::get()
 
 void Scheduler::put(TCB* handle, bool putAtFrontOfQueue)
 {
-    if(putAtFrontOfQueue) {
-        threadQueue.addFirst(handle);
-    }
-    else {
-        threadQueue.addLast(handle);
-    }
+    if(putAtFrontOfQueue) threadQueue.addFirst(handle);
+    else threadQueue.addLast(handle);
 }
 
 bool Scheduler::contains(TCB *handle)

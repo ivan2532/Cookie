@@ -1,14 +1,14 @@
 #ifndef _Scheduler_hpp_
 #define _Scheduler_hpp_
 
-#include "KernelList.hpp"
+#include "KernelDeque.hpp"
 
 class TCB;
 
 class Scheduler
 {
 private:
-    static KernelList<TCB*> threadQueue;
+    static KernelDeque<TCB*> threadQueue;
 
 public:
     static TCB *get();

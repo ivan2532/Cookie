@@ -20,8 +20,8 @@ public:
 
     static TCB* createThread(Body body, void* args, void* stack, bool kernelThread = false);
 
-    static KernelList<TCB*> allThreads;
-    static KernelList<TCB*> suspendedThreads;
+    static KernelDeque<TCB*> allThreads;
+    static KernelDeque<TCB*> suspendedThreads;
     static TCB* running;
 
     bool isFinished() const { return m_Finished; }
@@ -46,24 +46,22 @@ private:
         void* args,
         uint64 timeSlice,
         uint64* stack,
-        bool putAtFrontOfSchedulerQueue = false,
-        bool putInScheduler = true,
         bool kernelThread = false)
-        :
+            :
             m_Body(body),
             m_Args(args),
             m_Stack(body != nullptr ? stack : nullptr),
-            m_Context
-        ({
-            (uint64)&bodyWrapper,
-            m_Stack != nullptr ? (uint64)&m_Stack[DEFAULT_STACK_SIZE] : 0
-         }),
+            m_Context ({
+                (uint64)&bodyWrapper,
+                m_Stack != nullptr ? (uint64)&m_Stack[DEFAULT_STACK_SIZE] : 0
+             }),
             m_TimeSlice(timeSlice),
             m_Finished(false),
             m_SleepCounter(0),
+            m_PutInScheduler(true),
             m_KernelThread(kernelThread)
     {
-        if(body != nullptr && putInScheduler) Scheduler::put(this, putAtFrontOfSchedulerQueue);
+        if(body != nullptr) Scheduler::put(this, true);
     }
 
     struct Context
@@ -78,8 +76,9 @@ private:
     Context m_Context;
     uint64 m_TimeSlice;
     bool m_Finished;
-    KernelList<TCB*> m_WaitingThreads;
+    KernelDeque<TCB*> m_WaitingThreads;
     uint64 m_SleepCounter;
+    bool m_PutInScheduler;
     bool m_KernelThread;
 
     static TCB* mainThread;
@@ -94,8 +93,7 @@ private:
 
     static void contextSwitch(Context* oldContext, Context* newContext);
 
-    static void getNewRunning();
-    static void dispatch(bool putOldThreadInScheduler = true);
+    static void dispatch();
     static int deleteThread(TCB* handle);
 
     static uint64 timeSliceCounter;

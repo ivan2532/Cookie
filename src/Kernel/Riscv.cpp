@@ -1,18 +1,12 @@
 #include "../../h/Kernel/Riscv.hpp"
 #include "../../h/Kernel/TCB.hpp"
-
 #include "../../h/Kernel/SCB.hpp"
-#include "../../lib/console.h"
 
-char Riscv::inputBuffer[InputBufferSize];
-int Riscv::inputBufferPointer = -1;
-SCB* Riscv::inputEmptySemaphore;
-SCB* Riscv::inputFullSemaphore;
+CharDeque Riscv::inputQueue;
+SCB* volatile Riscv::inputSemaphore;
 
-char Riscv::outputBuffer[OutputBufferSize];
-int Riscv::outputBufferPointer = -1;
-SCB* Riscv::outputEmptySemaphore;
-SCB* Riscv::outputFullSemaphore;
+CharDeque Riscv::outputQueue;
+SCB* volatile Riscv::outputSemaphore;
 
 void Riscv::returnFromSystemCall()
 {
@@ -21,25 +15,10 @@ void Riscv::returnFromSystemCall()
     __asm__ volatile ("sret");
 }
 
-void Riscv::contextSwitch(bool putOldThreadInSchedule)
-{
-    // Save important supervisor registers on the stack!
-    auto volatile sepc = readSepc();
-    auto volatile sstatus = readSstatus();
-
-    TCB::timeSliceCounter = 0;
-    TCB::dispatch(putOldThreadInSchedule);
-
-    // Restore important supervisor registers
-    writeSstatus(sstatus);
-    writeSepc(sepc);
-}
-
 void Riscv::handleTimerTrap()
 {
     // Clear interrupt pending bit
     maskClearSip(SIP_SSIP);
-
     if(TCB::running == nullptr) return;
 
     for(auto it = TCB::allThreads.head; it != nullptr; it = it->next)
@@ -48,14 +27,22 @@ void Riscv::handleTimerTrap()
 
         if(--(it->data->m_SleepCounter) == 0 && !Scheduler::contains(it->data))
         {
-            Scheduler::put(it->data, false);
+            Scheduler::put(it->data);
         }
     }
 
     TCB::timeSliceCounter++;
     if(TCB::timeSliceCounter >= TCB::running->m_TimeSlice)
     {
-        contextSwitch();
+        auto volatile sepc = readSepc();
+        auto volatile sstatus = readSstatus();
+
+        TCB::timeSliceCounter = 0;
+        TCB::dispatch();
+
+        // Restore important supervisor registers
+        writeSstatus(sstatus);
+        writeSepc(sepc);
     }
 }
 
@@ -75,10 +62,8 @@ void Riscv::handleExternalTrap()
         if((pStatus & CONSOLE_RX_STATUS_BIT) != 0)
         {
             auto pInData = *((char*)CONSOLE_RX_DATA);
-
-            inputEmptySemaphore->wait();
-            inputBuffer[++inputBufferPointer] = pInData;
-            inputFullSemaphore->signal();
+            inputQueue.addLast(pInData);
+            inputSemaphore->signal();
         }
     }
 
@@ -101,25 +86,34 @@ void Riscv::handleEcallTrap()
     auto volatile sepc = readSepc() + EcallInstructionSize;
     auto volatile sstatus = readSstatus();
 
-    handleSystemCalls();
+    auto volatile scause = readScause();
+    if(scause == SCAUSE_ECALL_FROM_SUPERVISOR_MODE)
+    {
+        TCB::timeSliceCounter = 0;
+        TCB::dispatch();
+    }
+    else handleSystemCalls();
 
     // Restore important supervisor registers
     writeSstatus(sstatus);
     writeSepc(sepc);
 }
 
-void Riscv::handleUnknownTrapCause(uint64 scause)
+[[noreturn]] void Riscv::handleUnknownTrapCause(uint64 scause)
 {
+    // Clear interrupt pending bit
+    maskClearSip(SIP_SSIP);
+
     printString("\nscause: ");
-    printInt(scause);
+    printInt((int)scause);
 
     auto volatile sepc = readSepc();
     printString("\nsepc: ");
-    printInt(sepc);
+    printInt((int)sepc);
 
     auto volatile stval = readStval();
     printString("\nstval: ");
-    printInt(stval);
+    printInt((int)stval);
 
     while(true);
 }
@@ -170,8 +164,7 @@ void Riscv::handleSystemCalls()
         case SYS_CALL_PUTC:
             handlePutChar();
             break;
-        default:
-            handleUnknownTrapCause(readScause());
+        default: handleUnknownTrapCause(readScause());
     }
 }
 
@@ -181,7 +174,7 @@ void Riscv::handleMemAlloc()
     size_t volatile sizeArg;
     __asm__ volatile ("mv %[outSize], a1" : [outSize] "=r" (sizeArg));
 
-    auto volatile returnValue = kernel_alloc(sizeArg);
+    auto volatile returnValue = MemoryAllocator::alloc(sizeArg);
 
     // Store result in A0
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
@@ -194,7 +187,7 @@ void Riscv::handleMemFree()
     // Get arguments
     __asm__ volatile ("mv %[outPtr], a1" : [outPtr] "=r" (ptrArg));
 
-    auto volatile returnValue = kernel_free(ptrArg);
+    auto volatile returnValue = MemoryAllocator::free(ptrArg);
 
     // Store result in A0
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
@@ -237,7 +230,8 @@ void Riscv::handleThreadExit()
 
 void Riscv::handleThreadDispatch()
 {
-    Riscv::contextSwitch();
+    TCB::timeSliceCounter = 0;
+    TCB::dispatch();
 }
 
 void Riscv::handleThreadJoin()
@@ -252,10 +246,10 @@ void Riscv::handleThreadJoin()
 
 void Riscv::handleSemaphoreOpen()
 {
-    // Save handle to A7, it will be overwritten by kernel_alloc
+    // Save handle to A7, it will be overwritten by alloc
     __asm__ volatile ("mv a7, a1");
 
-    auto newSCB = static_cast<SCB*>(kernel_alloc(sizeof(SCB)));
+    auto newSCB = static_cast<SCB*>(MemoryAllocator::alloc(sizeof(SCB)));
 
     SCB** volatile handle;
     unsigned volatile init;
@@ -282,7 +276,7 @@ void Riscv::handleSemaphoreClose()
     // Get arguments
     __asm__ volatile ("mv %[outHandle], a7" : [outHandle] "=r" (handle));
 
-    auto returnValue = kernel_free(handle);
+    auto returnValue = MemoryAllocator::free(handle);
 
     // Store results in A0
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
@@ -337,16 +331,8 @@ void Riscv::handleTimeSleep()
 
 void Riscv::handleGetChar()
 {
-    Riscv::inputFullSemaphore->wait();
-
-    auto returnValue = inputBuffer[0];
-    Riscv::inputBufferPointer--;
-    for(int i = 0; i < Riscv::InputBufferSize - 1; i++)
-    {
-        Riscv::inputBuffer[i] = Riscv::inputBuffer[i + 1];
-    }
-
-    Riscv::inputEmptySemaphore->signal();
+    Riscv::inputSemaphore->wait();
+    auto returnValue = inputQueue.removeFirst();
 
     // Store results in A0
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
@@ -359,7 +345,6 @@ void Riscv::handlePutChar()
     // Get arguments
     __asm__ volatile ("mv %[outChar], a1" : [outChar] "=r" (outputChar));
 
-    outputEmptySemaphore->wait();
-    outputBuffer[++outputBufferPointer] = outputChar;
-    outputFullSemaphore->signal();
+    outputQueue.addLast(outputChar);
+    outputSemaphore->signal();
 }

@@ -1,9 +1,9 @@
 #include "../../h/C++_API/syscall_cpp.hpp"
 
 Thread::Thread(void (*body)(void *), void *arg)
-        :
-        body(body),
-        arg(arg)
+    :
+    body(body),
+    arg(arg)
 {
     // Can't create main thread, it gets created by the system
     if(body == nullptr) return;
@@ -35,8 +35,8 @@ void Thread::dispatch()
 }
 
 Thread::Thread()
-        :
-        body(nullptr)
+    :
+    body(nullptr)
 {
 }
 
