@@ -10,14 +10,13 @@ PeriodicThread::PeriodicThread(time_t period)
     :
     period(period)
 {
-    start();
 }
 
 [[noreturn]] void PeriodicThread::run()
 {
     while(true)
     {
-        time_sleep(period);
         periodicActivation();
+        time_sleep(period);
     }
 }
