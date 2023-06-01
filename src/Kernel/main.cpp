@@ -3,7 +3,6 @@
 #include "../../h/Kernel/SCB.hpp"
 #include "../../h/Tests//printing.hpp"
 #include "../../h/Kernel/Riscv.hpp"
-#include "../../h/Kernel/semaphoreTestThreads.h"
 
 extern void userMain();
 

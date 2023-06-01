@@ -1,7 +1,6 @@
 #include "../../h/C++_API/syscall_cpp.hpp"
 
 #include "../../h/Tests/buffer_CPP_API.hpp"
-#include "../../h/Tests/printing.hpp"
 
 
 static Semaphore *waitForAll;
@@ -22,7 +21,7 @@ public:
     void run() override {
         int key;
         int i = 0;
-        while ((key = getc()) != 'q') {
+        while ((key = getc()) != 0x1b) {
             td->buffer->put(key);
             i++;
         }

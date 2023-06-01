@@ -6,7 +6,7 @@
 #define _Riscv_hpp_
 
 #include "../../lib/hw.h"
-#include "../../h/Kernel/List.hpp"
+#include "../../h/Kernel/KernelList.hpp"
 #include "../../h/Tests/printing.hpp"
 
 class Riscv

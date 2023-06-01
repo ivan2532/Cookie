@@ -1,56 +1,46 @@
-#ifndef _List_hpp_
-#define _List_hpp_
+#ifndef _Kernel_List_hpp_
+#define _Kernel_List_hpp_
 
 #include "kernel_allocator.h"
 #include "../C++_API/syscall_cpp.hpp"
 
 template<typename T>
-class List
+class KernelList
 {
 public:
     struct Node
     {
-        T* data;
+        T data;
         Node* next;
 
-        Node(T* data, Node* next) : data(data), next(next) {}
+        Node(T data, Node* next) : data(data), next(next) {}
     };
 
     Node* head;
     Node* tail;
-    List()
+    KernelList()
         :
         head(nullptr),
         tail(nullptr)
     {
     }
 
-    List(const List<T>&) = delete;
-    List<T>& operator=(const List<T>&) = delete;
+    KernelList(const KernelList<T>&) = delete;
+    KernelList<T>& operator=(const KernelList<T>&) = delete;
 
-    void addFirst(T *data, bool useKernelAlloc = false)
+    void addFirst(T data)
     {
-        Node* newNode;
-        if(useKernelAlloc)
-        {
-            newNode = static_cast<Node*>(kernel_alloc(sizeof(Node)));
-            new (newNode) Node(data, head);
-        }
-        else newNode = new Node(data, head);
+        auto newNode = static_cast<Node*>(kernel_alloc(sizeof(Node)));
+        new (newNode) Node(data, head);
 
         head = newNode;
         if (!tail) tail = head;
     }
 
-    void addLast(T *data, bool useKernelAlloc = false)
+    void addLast(T data)
     {
-        Node* newNode;
-        if(useKernelAlloc)
-        {
-            newNode = static_cast<Node*>(kernel_alloc(sizeof(Node)));
-            new (newNode) Node(data, nullptr);
-        }
-        else newNode = new Node(data, nullptr);
+        auto newNode = static_cast<Node*>(kernel_alloc(sizeof(Node)));
+        new (newNode) Node(data, nullptr);
 
         if (tail)
         {
@@ -60,32 +50,24 @@ public:
         else head = tail = newNode;
     }
 
-    T* removeFirst(bool useKernelFree = false)
+    T removeFirst()
     {
-        if (!head) return nullptr;
-
         Node* nodeToRemove = head;
         head = head->next;
         if (!head) tail = nullptr;
 
-        T* ret = nodeToRemove->data;
-
-        if(useKernelFree) kernel_free(nodeToRemove);
-        else delete nodeToRemove;
-
+        auto ret = nodeToRemove->data;
+        kernel_free(nodeToRemove);
         return ret;
     }
 
-    T* peekFirst()
+    T peekFirst()
     {
-        if (!head) return nullptr;
         return head->data;
     }
 
-    T* removeLast(bool useKernelFree = false)
+    T removeLast()
     {
-        if (!head) return nullptr;
-
         Node* prev = nullptr;
         for (Node* cur = head; cur && cur != tail; cur = cur->next)
         {
@@ -97,18 +79,13 @@ public:
         else head = nullptr;
         tail = prev;
 
-        T* ret = nodeToRemove->data;
-
-        if(useKernelFree) kernel_free(nodeToRemove);
-        else delete nodeToRemove;
-
+        auto ret = nodeToRemove->data;
+        kernel_free(nodeToRemove);
         return ret;
     }
 
-    T* remove(T* value)
+    int remove(T value)
     {
-        if (!head) return nullptr;
-
         Node* prev = nullptr;
         for (Node* cur = head; cur; cur = cur->next)
         {
@@ -128,19 +105,19 @@ public:
             else if(cur == head) head = cur->next;
             else if(cur == tail) tail = prev;
 
-            return cur->data;
+            kernel_free(cur);
+            return 0;
         }
 
-        return nullptr;
+        return -1;
     }
 
-    T* peekLast()
+    T peekLast()
     {
-        if (!tail) return nullptr;
         return tail->data;
     }
 
-    bool contains(T* value)
+    bool contains(T value)
     {
         for (Node* cur = head; cur; cur = cur->next)
         {
@@ -153,4 +130,4 @@ public:
     bool isEmpty() { return head == nullptr; }
 };
 
-#endif //_List_hpp_
+#endif // _Kernel_List_hpp_

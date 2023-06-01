@@ -13,23 +13,23 @@ void SCB::signal()
 
 SCB::~SCB()
 {
-    auto current = blockedQueue.removeFirst(true);
+    auto current = blockedQueue.removeFirst();
     while(current != nullptr)
     {
         Scheduler::put(current, false);
-        current = blockedQueue.removeFirst(true);
+        current = blockedQueue.removeFirst();
     }
 }
 
 void SCB::block()
 {
-    blockedQueue.addLast(TCB::running, true);
+    blockedQueue.addLast(TCB::running);
     Riscv::contextSwitch(false);
 }
 
 void SCB::unblock()
 {
-    auto threadToUnblock = blockedQueue.removeFirst(true);
+    auto threadToUnblock = blockedQueue.removeFirst();
     Scheduler::put(threadToUnblock, true);
     Riscv::contextSwitch();
 }

@@ -2,8 +2,8 @@
 #include "../../h/Kernel/Riscv.hpp"
 #include "../../h/Kernel/SCB.hpp"
 
-List<TCB> TCB::allThreads;
-List<TCB> TCB::suspendedThreads;
+KernelList<TCB*> TCB::allThreads;
+KernelList<TCB*> TCB::suspendedThreads;
 TCB* TCB::running = nullptr;
 
 uint64 TCB::timeSliceCounter = 0;
@@ -104,7 +104,7 @@ TCB* TCB::createThread(TCB::Body body, void* args, void* stack, bool kernelThrea
     // If we are creating the main thread, set it as running
     // All other threads go to TCB::allThreads
     if(body == nullptr) running = newTCB;
-    else allThreads.addLast(newTCB, true);
+    else allThreads.addLast(newTCB);
 
     return newTCB;
 }

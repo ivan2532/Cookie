@@ -20,8 +20,8 @@ public:
 
     static TCB* createThread(Body body, void* args, void* stack, bool kernelThread = false);
 
-    static List<TCB> allThreads;
-    static List<TCB> suspendedThreads;
+    static KernelList<TCB*> allThreads;
+    static KernelList<TCB*> suspendedThreads;
     static TCB* running;
 
     bool isFinished() const { return m_Finished; }
@@ -78,7 +78,7 @@ private:
     Context m_Context;
     uint64 m_TimeSlice;
     bool m_Finished;
-    List<TCB> m_WaitingThreads;
+    KernelList<TCB*> m_WaitingThreads;
     uint64 m_SleepCounter;
     bool m_KernelThread;
 

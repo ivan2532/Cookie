@@ -2,7 +2,7 @@
 #define _SCB_hpp_
 
 #include "TCB.hpp"
-#include "List.hpp"
+#include "KernelList.hpp"
 
 class SCB
 {
@@ -24,7 +24,7 @@ protected:
     int m_Value;
 
 private:
-    List<TCB> blockedQueue;
+    KernelList<TCB*> blockedQueue;
 };
 
 #endif //_SCB_hpp_

@@ -1,19 +1,19 @@
 #include "../../h/Kernel/Scheduler.hpp"
 
-List<TCB> Scheduler::threadQueue;
+KernelList<TCB*> Scheduler::threadQueue;
 
 TCB *Scheduler::get()
 {
-    return threadQueue.removeFirst(true);
+    return threadQueue.removeFirst();
 }
 
 void Scheduler::put(TCB* handle, bool putAtFrontOfQueue)
 {
     if(putAtFrontOfQueue) {
-        threadQueue.addFirst(handle, true);
+        threadQueue.addFirst(handle);
     }
     else {
-        threadQueue.addLast(handle, true);
+        threadQueue.addLast(handle);
     }
 }
 
