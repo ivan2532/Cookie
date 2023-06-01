@@ -20,7 +20,6 @@ void Riscv::handleTimerTrap()
 {
     // Clear interrupt pending bit
     maskClearSip(SIP_SSIP);
-    return;
     if(TCB::running == nullptr) return;
 
     for(auto it = TCB::allThreads.head; it != nullptr; it = it->next)
@@ -53,25 +52,23 @@ void Riscv::handleExternalTrap()
     // Clear interrupt pending bit
     maskClearSip(SIP_SSIP);
 
-    console_handler();
+    auto interruptId = plic_claim();
 
-//    auto interruptId = plic_claim();
-//
-//    // Check if the console generated an interrupt
-//    if(interruptId == CONSOLE_IRQ)
-//    {
-//        auto pStatus = *((char*)CONSOLE_STATUS);
-//
-//        // Read from the controller
-//        if((pStatus & CONSOLE_RX_STATUS_BIT) != 0)
-//        {
-//            auto pInData = *((char*)CONSOLE_RX_DATA);
-//            inputQueue.addLast(pInData);
-//            inputSemaphore->signal();
-//        }
-//    }
-//
-//    plic_complete(interruptId);
+    // Check if the console generated an interrupt
+    if(interruptId == CONSOLE_IRQ)
+    {
+        auto pStatus = *((char*)CONSOLE_STATUS);
+
+        // Read from the controller
+        if((pStatus & CONSOLE_RX_STATUS_BIT) != 0)
+        {
+            auto pInData = *((char*)CONSOLE_RX_DATA);
+            inputQueue.addLast(pInData);
+            inputSemaphore->signal();
+        }
+    }
+
+    plic_complete(interruptId);
 }
 
 void Riscv::handleEcallTrap()
@@ -335,10 +332,8 @@ void Riscv::handleTimeSleep()
 
 void Riscv::handleGetChar()
 {
-//    Riscv::inputSemaphore->wait();
-//    auto returnValue = inputQueue.removeFirst();
-
-    auto returnValue = __getc();
+    Riscv::inputSemaphore->wait();
+    auto returnValue = inputQueue.removeFirst();
 
     // Store results in A0
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));

@@ -54,25 +54,25 @@ static void consumer(void *arg) {
 
     int i = 0;
     while (!threadEnd) {
-        //int key = data->buffer->get();
+        int key = data->buffer->get();
         data->buffer->get();
         i++;
 
-        //putc(key);
+        putc(key);
 
         if (i % (5 * data->id) == 0) {
             thread_dispatch();
         }
 
         if (i % 80 == 0) {
-            //putc('\n');
+            putc('\n');
         }
     }
 
     while (data->buffer->getCnt() > 0) {
-        //int key = data->buffer->get();
+        int key = data->buffer->get();
         data->buffer->get();
-        //putc(key);
+        putc(key);
     }
 
     sem_signal(data->wait);
