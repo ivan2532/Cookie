@@ -13,6 +13,13 @@ TCB* TCB::idleThread = nullptr;
 TCB* TCB::outputThread = nullptr;
 TCB* TCB::userThread = nullptr;
 
+TCB::~TCB()
+{
+    allThreads.remove(this);
+    suspendedThreads.remove(this);
+    if(m_Stack != nullptr) MemoryAllocator::free(m_Stack);
+}
+
 void TCB::bodyWrapper()
 {
     // The thread is created and should start from here, we are still in the supervisor regime

@@ -29,12 +29,7 @@ public:
 
     static int sleep(uint64);
 
-    ~TCB()
-    {
-        allThreads.remove(this);
-        suspendedThreads.remove(this);
-        MemoryAllocator::free(m_Stack);
-    }
+    ~TCB();
 
 private:
     // When creating an initial context, we want ra to point to the body of
@@ -51,7 +46,7 @@ private:
             m_Stack(stack),
             m_Context ({
                 (uint64)&bodyWrapper,
-                (uint64)((char*)stack + (DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION))
+                body == nullptr ? 0 : (uint64)((char*)stack + (DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION))
              }),
             m_TimeSlice(timeSlice),
             m_Finished(false),

@@ -8,7 +8,8 @@ KERNEL_IMG = kernel
 KERNEL_ASM = kernel.asm
 
 LIBS = \
-  ${DIR_LIBS}/hw.lib
+  ${DIR_LIBS}/hw.lib \
+  ${DIR_LIBS}/mem.lib
 
 
 
