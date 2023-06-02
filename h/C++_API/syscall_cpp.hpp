@@ -23,7 +23,6 @@ public:
 protected:
     Thread();
     virtual void run() { }
-    thread_t getMyHandle() { return myHandle; }
 
 private:
     static void runWrapper(void* args);
