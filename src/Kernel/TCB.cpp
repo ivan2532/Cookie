@@ -45,13 +45,6 @@ int TCB::deleteThread(TCB* handle)
 {
     if(handle == nullptr) return -1;
 
-    // Handle deletion of main thread
-    if(handle->m_Body == nullptr)
-    {
-        MemoryAllocator::free(handle);
-        return 0;
-    }
-
     // Unblock thread that is waiting for this thread to finish
     handle->unblockWaitingThread();
 

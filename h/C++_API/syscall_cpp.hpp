@@ -52,10 +52,11 @@ public:
 protected:
     explicit PeriodicThread (time_t period);
     virtual void periodicActivation () {}
-    [[noreturn]] void run() override;
+    void run() override;
 
 private:
     time_t period;
+    bool work;
 };
 
 class Console

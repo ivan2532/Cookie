@@ -1,7 +1,8 @@
 #include "../../h/Kernel/Riscv.hpp"
 #include "../../h/Kernel/TCB.hpp"
 #include "../../h/Kernel/SCB.hpp"
-#include "../../lib/console.h"
+
+volatile uint8 Riscv::nestingCount = 0;
 
 CharDeque Riscv::inputQueue;
 SCB* volatile Riscv::inputSemaphore;
@@ -111,18 +112,18 @@ void Riscv::handleEcallTrap()
     // Clear interrupt pending bit
     maskClearSip(SIP_SSIP);
 
-    printString("\nscause: ");
-    printInt((int)scause);
+    KernelPrinter::printString("\nscause: ");
+    KernelPrinter::printInteger((int)scause);
 
     auto volatile sepc = readSepc();
-    printString("\nsepc: ");
-    printInt((int)sepc);
+    KernelPrinter::printString("\nsepc: ");
+    KernelPrinter::printInteger((int)sepc);
 
     auto volatile stval = readStval();
-    printString("\nstval: ");
-    printInt((int)stval);
+    KernelPrinter::printString("\nstval: ");
+    KernelPrinter::printInteger((int)stval);
 
-    while(true);
+    while(true) TCB::dispatch();
 }
 
 void Riscv::handleSystemCalls()
@@ -354,6 +355,14 @@ void Riscv::handlePutChar()
 
     outputQueue.addLast(outputChar);
     outputSemaphore->signal();
+}
 
-    //__putc(outputChar);
+void Riscv::lock()
+{
+    if(nestingCount++ == 0) Riscv::maskClearSstatus(Riscv::SSTATUS_SIE);
+}
+
+void Riscv::unlock()
+{
+    if(nestingCount++ == 0) Riscv::maskClearSstatus(Riscv::SSTATUS_SIE);
 }

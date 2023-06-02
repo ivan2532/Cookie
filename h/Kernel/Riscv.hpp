@@ -7,7 +7,7 @@
 
 #include "../../lib/hw.h"
 #include "../../h/Kernel/KernelDeque.hpp"
-#include "../../h/Tests/printing.hpp"
+#include "../../h/Kernel/KernelPrinter.hpp"
 #include "CharDeque.hpp"
 
 class Riscv
@@ -18,6 +18,7 @@ class Riscv
     friend void startIO();
     friend void startUserThread();
     friend char getc();
+    friend class KernelPrinter;
 
 public:
     static void returnFromSystemCall();
@@ -86,6 +87,9 @@ private:
 
     static void contextSwitch(bool putOldThreadInSchedule = true);
 
+    static void lock();
+    static void unlock();
+
     static constexpr uint64 SCAUSE_ECALL_FROM_SUPERVISOR_MODE = 0x0000000000000009UL;
 
     static constexpr uint64 SYS_CALL_MEM_ALLOC = 0x01;
@@ -108,6 +112,8 @@ private:
     static CharDeque outputQueue;
     static SCB* volatile outputSemaphore;
     static SCB* volatile outputControllerReadySemaphore;
+
+    static volatile uint8 nestingCount;
 };
 
 inline uint64 Riscv::readScause()

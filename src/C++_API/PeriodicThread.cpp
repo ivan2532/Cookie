@@ -3,18 +3,19 @@
 
 void PeriodicThread::terminate()
 {
-    TCB::deleteThread(getMyHandle());
+    work = false;
 }
 
 PeriodicThread::PeriodicThread(time_t period)
     :
-    period(period)
+    period(period),
+    work(true)
 {
 }
 
-[[noreturn]] void PeriodicThread::run()
+void PeriodicThread::run()
 {
-    while(true)
+    while(work)
     {
         periodicActivation();
         time_sleep(period);

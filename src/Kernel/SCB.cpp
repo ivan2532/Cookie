@@ -3,22 +3,16 @@
 
 void SCB::wait()
 {
-    bool previousSIE = Riscv::readSstatus() & Riscv::SSTATUS_SIE;
-    if(previousSIE) Riscv::maskClearSstatus(Riscv::SSTATUS_SIE);
-
+    Riscv::lock();
     if(--m_Value < 0) block();
-
-    if(previousSIE) Riscv::maskSetSstatus(Riscv::SSTATUS_SIE);
+    Riscv::unlock();
 }
 
 void SCB::signal()
 {
-    bool previousSIE = Riscv::readSstatus() & Riscv::SSTATUS_SIE;
-    if(previousSIE) Riscv::maskClearSstatus(Riscv::SSTATUS_SIE);
-
+    Riscv::lock();
     if(m_Value++ < 0) unblock();
-
-    if(previousSIE) Riscv::maskSetSstatus(Riscv::SSTATUS_SIE);
+    Riscv::unlock();
 }
 
 SCB::~SCB()
