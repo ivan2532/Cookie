@@ -48,10 +48,10 @@ private:
             :
             m_Body(body),
             m_Args(args),
-            m_Stack(body != nullptr ? stack : nullptr),
+            m_Stack(stack),
             m_Context ({
                 (uint64)&bodyWrapper,
-                m_Stack != nullptr ? (uint64)((char*)stack + DEFAULT_STACK_SIZE) : 0
+                (uint64)((char*)stack + (DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION))
              }),
             m_TimeSlice(timeSlice),
             m_Finished(false),
