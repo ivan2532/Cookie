@@ -52,11 +52,7 @@ int TCB::deleteThread(TCB* handle)
     MemoryAllocator::free(handle);
 
     // If we are deleting the running thread, change context and don't save old context
-    if(handleIsRunning)
-    {
-        running = Scheduler::get();
-        TCB::contextSwitch(nullptr, &running->m_Context);
-    }
+    if(handleIsRunning) thread_dispatch();
 
     return 0;
 }
@@ -69,7 +65,7 @@ TCB* TCB::createThread(TCB::Body body, void* args, void* stack, bool kernelThrea
         body,
         args,
         DEFAULT_TIME_SLICE,
-        (uint64*)stack,
+        stack,
         kernelThread
     );
 

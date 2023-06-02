@@ -24,8 +24,6 @@ public:
     static KernelDeque<TCB*> suspendedThreads;
     static TCB* running;
 
-    bool isFinished() const { return m_Finished; }
-
     void waitForThread(TCB* handle);
     void unblockWaitingThread();
 
@@ -35,7 +33,7 @@ public:
     {
         allThreads.remove(this);
         suspendedThreads.remove(this);
-        delete[] m_Stack;
+        MemoryAllocator::free(m_Stack);
     }
 
 private:
@@ -45,7 +43,7 @@ private:
     TCB(Body body,
         void* args,
         uint64 timeSlice,
-        uint64* stack,
+        void* stack,
         bool kernelThread = false)
             :
             m_Body(body),
@@ -53,7 +51,7 @@ private:
             m_Stack(body != nullptr ? stack : nullptr),
             m_Context ({
                 (uint64)&bodyWrapper,
-                m_Stack != nullptr ? (uint64)&(((char*)m_Stack)[DEFAULT_STACK_SIZE]) : 0
+                m_Stack != nullptr ? (uint64)((char*)stack + DEFAULT_STACK_SIZE) : 0
              }),
             m_TimeSlice(timeSlice),
             m_Finished(false),
@@ -72,7 +70,7 @@ private:
 
     Body m_Body;
     void* m_Args;
-    uint64* m_Stack;
+    void* m_Stack;
     Context m_Context;
     uint64 m_TimeSlice;
     bool m_Finished;
