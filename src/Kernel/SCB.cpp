@@ -32,5 +32,4 @@ void SCB::unblock()
 {
     auto threadToUnblock = blockedQueue.removeFirst();
     Scheduler::put(threadToUnblock);
-    thread_dispatch();
 }
