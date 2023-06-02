@@ -55,7 +55,6 @@ static void consumer(void *arg) {
     int i = 0;
     while (!threadEnd) {
         int key = data->buffer->get();
-        data->buffer->get();
         i++;
 
         putc(key);
@@ -71,7 +70,6 @@ static void consumer(void *arg) {
 
     while (data->buffer->getCnt() > 0) {
         int key = data->buffer->get();
-        data->buffer->get();
         putc(key);
     }
 
