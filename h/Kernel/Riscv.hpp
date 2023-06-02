@@ -87,8 +87,8 @@ private:
 
     static void contextSwitch(bool putOldThreadInSchedule = true);
 
-    static void lock();
-    static void unlock();
+    inline static void lock() { Riscv::maskClearSstatus(Riscv::SSTATUS_SIE); }
+    inline static void unlock() { Riscv::maskSetSstatus(Riscv::SSTATUS_SIE); }
 
     static constexpr uint64 SCAUSE_ECALL_FROM_SUPERVISOR_MODE = 0x0000000000000009UL;
 

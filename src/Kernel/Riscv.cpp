@@ -356,13 +356,3 @@ void Riscv::handlePutChar()
     outputQueue.addLast(outputChar);
     outputSemaphore->signal();
 }
-
-void Riscv::lock()
-{
-    if(nestingCount++ == 0) Riscv::maskClearSstatus(Riscv::SSTATUS_SIE);
-}
-
-void Riscv::unlock()
-{
-    if(nestingCount++ == 0) Riscv::maskClearSstatus(Riscv::SSTATUS_SIE);
-}

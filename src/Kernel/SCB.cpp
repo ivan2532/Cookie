@@ -3,16 +3,12 @@
 
 void SCB::wait()
 {
-    Riscv::lock();
     if(--m_Value < 0) block();
-    Riscv::unlock();
 }
 
 void SCB::signal()
 {
-    Riscv::lock();
     if(m_Value++ < 0) unblock();
-    Riscv::unlock();
 }
 
 SCB::~SCB()
