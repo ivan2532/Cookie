@@ -54,7 +54,7 @@ private:
             m_PutInScheduler(true),
             m_KernelThread(kernelThread)
     {
-        if(body != nullptr) Scheduler::put(this, true);
+        if(body != nullptr && body != &idleThreadBody) Scheduler::put(this, true);
     }
 
     struct Context

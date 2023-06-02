@@ -16,7 +16,7 @@ SCB::~SCB()
     auto current = blockedQueue.removeFirst();
     while(current != nullptr)
     {
-        Scheduler::put(current, false);
+        Scheduler::put(current);
         current = blockedQueue.removeFirst();
     }
 }
@@ -31,6 +31,6 @@ void SCB::block()
 void SCB::unblock()
 {
     auto threadToUnblock = blockedQueue.removeFirst();
-    Scheduler::put(threadToUnblock, true);
+    Scheduler::put(threadToUnblock);
     thread_dispatch();
 }

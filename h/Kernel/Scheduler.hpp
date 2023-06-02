@@ -14,6 +14,7 @@ public:
     static TCB *get();
     static void put(TCB *handle, bool putAtFrontOfQueue = false);
     static bool contains(TCB *handle);
+    static bool isEmpty();
 };
 
 #endif //_Scheduler_hpp_

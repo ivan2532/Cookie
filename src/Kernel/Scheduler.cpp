@@ -17,3 +17,7 @@ bool Scheduler::contains(TCB *handle)
 {
     return threadQueue.contains(handle);
 }
+
+bool Scheduler::isEmpty() {
+    return threadQueue.isEmpty();
+}

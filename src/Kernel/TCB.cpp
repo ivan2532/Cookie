@@ -43,7 +43,9 @@ void TCB::dispatch()
     // We don't want to put suspended threads into the Scheduler
     if(running->m_PutInScheduler && !old->m_Finished) Scheduler::put(old);
     else running->m_PutInScheduler = true;
-    running = Scheduler::get();
+
+    if(Scheduler::isEmpty()) running = idleThread;
+    else running = Scheduler::get();
 
     if(running != old) TCB::contextSwitch(&old->m_Context, &running->m_Context);
 }
