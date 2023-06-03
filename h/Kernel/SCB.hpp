@@ -7,11 +7,7 @@
 class SCB
 {
 public:
-    explicit SCB(unsigned startValue = 1)
-        :
-        m_Value((int)startValue)
-    {
-    }
+    explicit SCB(unsigned startValue = 1, bool binary = false);
     ~SCB();
 
     void wait();
@@ -22,9 +18,10 @@ protected:
     void unblock();
 
     int m_Value;
+    bool m_Binary;
 
 private:
-    KernelDeque<TCB*> blockedQueue;
+    KernelDeque<TCB*> m_BlockedQueue;
 };
 
 #endif //_SCB_hpp_

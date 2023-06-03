@@ -1,14 +1,17 @@
 #include "../../h/Kernel/Riscv.hpp"
 #include "../../h/Kernel/TCB.hpp"
 #include "../../h/Kernel/SCB.hpp"
+#include "../../lib/console.h"
 
 CharDeque Riscv::inputQueue;
 SCB* volatile Riscv::inputEmptySemaphore;
 SCB* volatile Riscv::inputFullSemaphore;
 
-CharDeque Riscv::outputQueue;
+volatile CharDeque Riscv::outputQueue;
 SCB* volatile Riscv::outputEmptySemaphore;
 SCB* volatile Riscv::outputFullSemaphore;
+SCB* volatile Riscv::outputMutex;
+
 SCB* volatile Riscv::outputControllerReadySemaphore;
 
 void Riscv::returnFromSystemCall()
@@ -53,7 +56,6 @@ void Riscv::handleExternalTrap()
 {
     // Clear interrupt pending bit
     maskClearSip(SIP_SSIP);
-
     auto interruptId = plic_claim();
 
     // Check if the console generated an interrupt
@@ -85,9 +87,6 @@ void Riscv::handleEcallTrap()
 {
     // Clear interrupt pending bit
     maskClearSip(SIP_SSIP);
-
-    // Save A4 to A7, it will be overwritten
-    __asm__ volatile ("mv a7, a4");
 
     // Ecall will have a sepc that points back to ecall, so we want to return to the
     // instruction after that ecall
@@ -164,6 +163,12 @@ void Riscv::handleSystemCalls()
             break;
         case SYS_CALL_TIME_SLEEP:
             handleTimeSleep();
+            break;
+        case SYS_CALL_GET_CHAR:
+            handleGetChar();
+            break;
+        case SYS_CALL_PUT_CHAR:
+            handlePutChar();
             break;
 
         default: handleUnknownTrapCause(readScause());
@@ -328,6 +333,25 @@ void Riscv::handleTimeSleep()
 
     // Store results in A0
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
+}
+
+void Riscv::handleGetChar()
+{
+    auto returnValue = getCharFromInputBuffer();
+
+    // Store results in A0
+    __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
+}
+
+void Riscv::handlePutChar()
+{
+    char volatile outputChar;
+
+    // Get arguments
+    __asm__ volatile ("mv %[outChar], a1" : [outChar] "=r" (outputChar));
+
+    addCharToOutputBuffer(outputChar);
+    //__putc(outputChar);
 }
 
 char Riscv::getCharFromInputBuffer()

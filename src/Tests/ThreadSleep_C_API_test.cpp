@@ -26,5 +26,8 @@ void testSleeping() {
         thread_create(&sleepyThread[i], sleepyRun, sleep_times + i);
     }
 
-    while (!(finished[0] && finished[1])) {}
+    while (!(finished[0] && finished[1])) {
+        //printString("Ja sam mentol\n");
+        //thread_dispatch();
+    }
 }

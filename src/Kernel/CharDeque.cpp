@@ -7,7 +7,7 @@ CharDeque::CharDeque()
 {
 }
 
-char CharDeque::removeFirst()
+char CharDeque::removeFirst() volatile
 {
     auto nodeToRemove = head;
     head = head->next;
@@ -27,7 +27,7 @@ void CharDeque::addFirst(char data)
     if (!tail) tail = head;
 }
 
-void CharDeque::addLast(char data)
+void CharDeque::addLast(char data) volatile
 {
     auto newNode = static_cast<Node*>(MemoryAllocator::alloc(sizeof(Node)));
     new (newNode) Node(data, nullptr);

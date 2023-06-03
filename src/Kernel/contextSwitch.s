@@ -19,4 +19,7 @@ _ZN3TCB13contextSwitchEPNS_7ContextES1_:
     ld ra, 0 * 8(a1) # 0*8(a0) is the new context's first field (uint64 ra)
     ld sp, 1 * 8(a1) # 1*8(a0) is the new context's second field (uint64 sp)
 
+    #li t1, 0x2
+    #csrs sstatus, t1
+
     ret

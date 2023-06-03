@@ -17,8 +17,6 @@ void KernelPrinter::printString(char const *string)
 
 void KernelPrinter::printInteger(uint64 integer)
 {
-    Riscv::lock();
-
     static char digits[] = "0123456789";
     char buf[16];
     auto i = 0;
@@ -28,6 +26,4 @@ void KernelPrinter::printInteger(uint64 integer)
     while ((x /= 10) != 0);
 
     while (--i >= 0) Riscv::addCharToOutputBuffer(buf[i]);
-
-    Riscv::unlock();
 }

@@ -83,6 +83,8 @@ private:
     inline static void handleSemaphoreWait();
     inline static void handleSemaphoreSignal();
     inline static void handleTimeSleep();
+    inline static void handleGetChar();
+    inline static void handlePutChar();
 
     static void contextSwitch(bool putOldThreadInSchedule = true);
 
@@ -102,16 +104,20 @@ private:
     static constexpr uint64 SYS_CALL_SEM_WAIT = 0x23;
     static constexpr uint64 SYS_CALL_SEM_SIGNAL = 0x24;
     static constexpr uint64 SYS_CALL_TIME_SLEEP = 0x31;
+    static constexpr uint64 SYS_CALL_GET_CHAR = 0x41;
+    static constexpr uint64 SYS_CALL_PUT_CHAR = 0x42;
 
     static CharDeque inputQueue;
     static constexpr uint16 INPUT_BUFFER_SIZE = 20;
     static SCB* volatile inputEmptySemaphore;
     static SCB* volatile inputFullSemaphore;
 
-    static CharDeque outputQueue;
+    static volatile CharDeque outputQueue;
     static constexpr uint16 OUTPUT_BUFFER_SIZE = 20;
     static SCB* volatile outputEmptySemaphore;
     static SCB* volatile outputFullSemaphore;
+    static SCB* volatile outputMutex;
+
     static SCB* volatile outputControllerReadySemaphore;
 
     static char getCharFromInputBuffer();

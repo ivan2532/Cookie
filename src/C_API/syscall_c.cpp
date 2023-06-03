@@ -83,6 +83,6 @@ int sem_signal(sem_t id) { return (int)systemCall(0x24, id); }
 
 int time_sleep(time_t time) { return (int)systemCall(0x31, time); }
 
-char getc() { return Riscv::getCharFromInputBuffer(); }
+char getc() { return (char) systemCall(0x41); }
 
-void putc(char output) { Riscv::addCharToOutputBuffer(output); }
+void putc(char output) { systemCall(0x42, output); }

@@ -152,7 +152,11 @@ int TCB::sleep(uint64 time)
 {
     while(true)
     {
-        if(!Scheduler::isEmpty()) thread_dispatch();
+        if(!Scheduler::isEmpty())
+        {
+            TCB::running->m_PutInScheduler = false;
+            thread_dispatch();
+        }
     }
 }
 
@@ -166,6 +170,7 @@ int TCB::sleep(uint64 time)
         Riscv::outputControllerReadySemaphore->wait();
 
         auto pOutData = (char*)CONSOLE_TX_DATA;
+
         *pOutData = Riscv::outputQueue.removeFirst();
         Riscv::outputEmptySemaphore->signal();
 

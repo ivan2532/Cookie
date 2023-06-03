@@ -97,7 +97,7 @@ void* MemoryAllocator::alloc(size_t size)
     return (char*)blockToAllocate + sizeof(Block);
 }
 
-int MemoryAllocator::free(void *ptr)
+int MemoryAllocator::free(void* ptr)
 {
     if(ptr == nullptr) return 0;
 

@@ -1,35 +1,47 @@
 #include "../../h/Kernel/SCB.hpp"
 #include "../../h/Kernel/Riscv.hpp"
 
-void SCB::wait()
+SCB::SCB(unsigned startValue, bool binary)
+    :
+    m_Value((int)startValue),
+    m_Binary(binary)
 {
-    if(--m_Value < 0) block();
-}
-
-void SCB::signal()
-{
-    if(m_Value++ < 0) unblock();
 }
 
 SCB::~SCB()
 {
-    auto current = blockedQueue.removeFirst();
+    auto current = m_BlockedQueue.removeFirst();
     while(current != nullptr)
     {
         Scheduler::put(current);
-        current = blockedQueue.removeFirst();
+        current = m_BlockedQueue.removeFirst();
     }
+}
+
+void SCB::wait()
+{
+    //Riscv::lock();
+    if(--m_Value < 0) block();
+    //Riscv::unlock();
+}
+
+void SCB::signal()
+{
+    //Riscv::lock();
+    if(m_Value++ < 0) unblock();
+    if(m_Binary && m_Value > 1) m_Value = 1;
+    //Riscv::unlock();
 }
 
 void SCB::block()
 {
-    blockedQueue.addLast(TCB::running);
+    m_BlockedQueue.addLast(TCB::running);
     TCB::running->m_PutInScheduler = false;
     thread_dispatch();
 }
 
 void SCB::unblock()
 {
-    auto threadToUnblock = blockedQueue.removeFirst();
+    auto threadToUnblock = m_BlockedQueue.removeFirst();
     Scheduler::put(threadToUnblock);
 }

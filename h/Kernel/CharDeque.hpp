@@ -23,9 +23,9 @@ public:
     CharDeque& operator=(const CharDeque&) = delete;
 
     void addFirst(char data);
-    void addLast(char data);
+    void addLast(char data) volatile;
 
-    char removeFirst();
+    char removeFirst() volatile;
     char removeLast();
     int remove(char value);
 
