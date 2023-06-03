@@ -107,7 +107,7 @@ private:
     static constexpr uint64 SYS_CALL_GET_CHAR = 0x41;
     static constexpr uint64 SYS_CALL_PUT_CHAR = 0x42;
 
-    static CharDeque inputQueue;
+    static volatile CharDeque inputQueue;
     static constexpr uint16 INPUT_BUFFER_SIZE = 20;
     static SCB* volatile inputEmptySemaphore;
     static SCB* volatile inputFullSemaphore;
@@ -116,7 +116,6 @@ private:
     static constexpr uint16 OUTPUT_BUFFER_SIZE = 20;
     static SCB* volatile outputEmptySemaphore;
     static SCB* volatile outputFullSemaphore;
-    static SCB* volatile outputMutex;
 
     static SCB* volatile outputControllerReadySemaphore;
 

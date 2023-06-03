@@ -52,7 +52,7 @@ public:
 
     T removeFirst()
     {
-        Node* nodeToRemove = head;
+        auto nodeToRemove = head;
         head = head->next;
         if (!head) tail = nullptr;
 
@@ -69,12 +69,12 @@ public:
     T removeLast()
     {
         Node* prev = nullptr;
-        for (Node* cur = head; cur && cur != tail; cur = cur->next)
+        for (auto cur = head; cur && cur != tail; cur = cur->next)
         {
             prev = cur;
         }
 
-        Node* nodeToRemove = tail;
+        auto nodeToRemove = tail;
         if (prev) prev->next = nullptr;
         else head = nullptr;
         tail = prev;
@@ -87,7 +87,7 @@ public:
     int remove(T value)
     {
         Node* prev = nullptr;
-        for (Node* cur = head; cur; cur = cur->next)
+        for (auto cur = head; cur; cur = cur->next)
         {
             if(cur->data != value)
             {
@@ -119,7 +119,7 @@ public:
 
     bool contains(T value) const
     {
-        for (Node* cur = head; cur; cur = cur->next)
+        for (auto cur = head; cur; cur = cur->next)
         {
             if(cur->data == value) return true;
         }

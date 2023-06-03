@@ -33,14 +33,12 @@ inline void startIO()
     Riscv::inputFullSemaphore = static_cast<SCB*>(MemoryAllocator::alloc(sizeof(SCB)));
     Riscv::outputEmptySemaphore = static_cast<SCB*>(MemoryAllocator::alloc(sizeof(SCB)));
     Riscv::outputFullSemaphore = static_cast<SCB*>(MemoryAllocator::alloc(sizeof(SCB)));
-    Riscv::outputMutex = static_cast<SCB*>(MemoryAllocator::alloc(sizeof(SCB)));
     Riscv::outputControllerReadySemaphore = static_cast<SCB*>(MemoryAllocator::alloc(sizeof(SCB)));
 
     new (Riscv::inputEmptySemaphore) volatile SCB(Riscv::INPUT_BUFFER_SIZE);
     new (Riscv::inputFullSemaphore) volatile SCB(0);
     new (Riscv::outputEmptySemaphore) volatile SCB(Riscv::OUTPUT_BUFFER_SIZE);
     new (Riscv::outputFullSemaphore) volatile SCB(0);
-    new (Riscv::outputMutex) volatile SCB(1);
     new (Riscv::outputControllerReadySemaphore) volatile SCB(0, true);
 
     // Create io thread

@@ -20,17 +20,13 @@ SCB::~SCB()
 
 void SCB::wait()
 {
-    //Riscv::lock();
     if(--m_Value < 0) block();
-    //Riscv::unlock();
 }
 
 void SCB::signal()
 {
-    //Riscv::lock();
     if(m_Value++ < 0) unblock();
     if(m_Binary && m_Value > 1) m_Value = 1;
-    //Riscv::unlock();
 }
 
 void SCB::block()

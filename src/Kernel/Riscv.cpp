@@ -3,14 +3,13 @@
 #include "../../h/Kernel/SCB.hpp"
 #include "../../lib/console.h"
 
-CharDeque Riscv::inputQueue;
+volatile CharDeque Riscv::inputQueue;
 SCB* volatile Riscv::inputEmptySemaphore;
 SCB* volatile Riscv::inputFullSemaphore;
 
 volatile CharDeque Riscv::outputQueue;
 SCB* volatile Riscv::outputEmptySemaphore;
 SCB* volatile Riscv::outputFullSemaphore;
-SCB* volatile Riscv::outputMutex;
 
 SCB* volatile Riscv::outputControllerReadySemaphore;
 
@@ -33,7 +32,7 @@ void Riscv::handleTimerTrap()
 
         if(--(it->data->m_SleepCounter) == 0 && !Scheduler::contains(it->data))
         {
-            Scheduler::put(it->data, true);
+            Scheduler::put(it->data);
         }
     }
 
