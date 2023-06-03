@@ -1,7 +1,7 @@
 #include "../../h/Kernel/MemoryAllocator.hpp"
 #include "../../lib/mem.h"
 
-Block* MemoryAllocator::freeBlocksList = nullptr;
+volatile Block* volatile MemoryAllocator::freeBlocksList = nullptr;
 
 size_t MemoryAllocator::align(size_t size)
 {
@@ -59,7 +59,7 @@ Block* MemoryAllocator::firstFit(size_t minSize)
             continue;
         }
 
-        return iterator;
+        return (Block*)iterator;
     }
 
     return nullptr;
@@ -77,9 +77,7 @@ Block* MemoryAllocator::mergeBlocks(Block *parent, Block *child)
 void* MemoryAllocator::alloc(size_t size)
 {
     // Can't allocate a block with size 0
-    if(size == 0) {
-        return nullptr;
-    }
+    if(size == 0) return nullptr;
 
     // Include the size of the descriptor and align it to MEM_BLOCK_SIZE
     size += sizeof(Block);
@@ -88,7 +86,7 @@ void* MemoryAllocator::alloc(size_t size)
     if(freeBlocksList == nullptr) initFirstBlock();
 
     // Find a suitable free block
-    Block* blockToAllocate = firstFit(size);
+    auto blockToAllocate = firstFit(size);
     // Out of memory
     if(blockToAllocate == nullptr) return nullptr;
 
@@ -101,11 +99,13 @@ void* MemoryAllocator::alloc(size_t size)
 
 int MemoryAllocator::free(void *ptr)
 {
+    if(ptr == nullptr) return 0;
+
     // Get the descriptor of the allocated block
     auto descriptor = (Block*)( (char*)ptr - sizeof(Block) );
 
     // Find where to insert the block in the list
-    Block* iterator = freeBlocksList;
+    auto iterator = (Block*)freeBlocksList;
     if(iterator == nullptr)
     {
         freeBlocksList = descriptor;

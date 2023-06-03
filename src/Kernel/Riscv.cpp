@@ -3,10 +3,12 @@
 #include "../../h/Kernel/SCB.hpp"
 
 CharDeque Riscv::inputQueue;
-SCB* volatile Riscv::inputSemaphore;
+SCB* volatile Riscv::inputEmptySemaphore;
+SCB* volatile Riscv::inputFullSemaphore;
 
 CharDeque Riscv::outputQueue;
-SCB* volatile Riscv::outputSemaphore;
+SCB* volatile Riscv::outputEmptySemaphore;
+SCB* volatile Riscv::outputFullSemaphore;
 SCB* volatile Riscv::outputControllerReadySemaphore;
 
 void Riscv::returnFromSystemCall()
@@ -28,7 +30,7 @@ void Riscv::handleTimerTrap()
 
         if(--(it->data->m_SleepCounter) == 0 && !Scheduler::contains(it->data))
         {
-            Scheduler::put(it->data);
+            Scheduler::put(it->data, true);
         }
     }
 
@@ -69,8 +71,10 @@ void Riscv::handleExternalTrap()
         if(pStatus & CONSOLE_RX_STATUS_BIT)
         {
             auto pInData = *((char*)CONSOLE_RX_DATA);
+
+            inputEmptySemaphore->wait();
             inputQueue.addLast(pInData);
-            inputSemaphore->signal();
+            inputFullSemaphore->signal();
         }
     }
 
@@ -94,11 +98,7 @@ void Riscv::handleEcallTrap()
     auto volatile sstatus = readSstatus();
 
     auto volatile scause = readScause();
-    if(scause == SCAUSE_ECALL_FROM_SUPERVISOR_MODE)
-    {
-        TCB::timeSliceCounter = 0;
-        TCB::dispatch();
-    }
+    if(scause == SCAUSE_ECALL_FROM_SUPERVISOR_MODE) TCB::dispatch();
     else handleSystemCalls();
 
     // Restore important supervisor registers
@@ -232,7 +232,6 @@ void Riscv::handleThreadExit()
 
 void Riscv::handleThreadDispatch()
 {
-    TCB::timeSliceCounter = 0;
     TCB::dispatch();
 }
 
@@ -333,12 +332,16 @@ void Riscv::handleTimeSleep()
 
 char Riscv::getCharFromInputBuffer()
 {
-    Riscv::inputSemaphore->wait();
-    return inputQueue.removeFirst();
+    Riscv::inputFullSemaphore->wait();
+    auto inputChar = inputQueue.removeFirst();
+    Riscv::inputEmptySemaphore->signal();
+
+    return inputChar;
 }
 
 void Riscv::addCharToOutputBuffer(char outputChar)
 {
+    outputEmptySemaphore->wait();
     outputQueue.addLast(outputChar);
-    outputSemaphore->signal();
+    outputFullSemaphore->signal();
 }

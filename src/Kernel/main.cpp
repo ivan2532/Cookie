@@ -29,11 +29,16 @@ inline void startSystemThreads()
 inline void startIO()
 {
     // Create io semaphores
-    Riscv::inputSemaphore = static_cast<SCB*>(MemoryAllocator::alloc(sizeof(SCB)));
-    Riscv::outputSemaphore = static_cast<SCB*>(MemoryAllocator::alloc(sizeof(SCB)));
+    Riscv::inputEmptySemaphore = static_cast<SCB*>(MemoryAllocator::alloc(sizeof(SCB)));
+    Riscv::inputFullSemaphore = static_cast<SCB*>(MemoryAllocator::alloc(sizeof(SCB)));
+    Riscv::outputEmptySemaphore = static_cast<SCB*>(MemoryAllocator::alloc(sizeof(SCB)));
+    Riscv::outputFullSemaphore = static_cast<SCB*>(MemoryAllocator::alloc(sizeof(SCB)));
     Riscv::outputControllerReadySemaphore = static_cast<SCB*>(MemoryAllocator::alloc(sizeof(SCB)));
-    new (Riscv::inputSemaphore) volatile SCB(0);
-    new (Riscv::outputSemaphore) volatile SCB(0);
+
+    new (Riscv::inputEmptySemaphore) volatile SCB(Riscv::INPUT_BUFFER_SIZE);
+    new (Riscv::inputFullSemaphore) volatile SCB(0);
+    new (Riscv::outputEmptySemaphore) volatile SCB(Riscv::OUTPUT_BUFFER_SIZE);
+    new (Riscv::outputFullSemaphore) volatile SCB(0);
     new (Riscv::outputControllerReadySemaphore) volatile SCB(0);
 
     // Create io thread

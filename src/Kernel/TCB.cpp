@@ -162,11 +162,12 @@ int TCB::sleep(uint64 time)
     {
         Riscv::lock();
 
-        Riscv::outputSemaphore->wait();
+        Riscv::outputFullSemaphore->wait();
         Riscv::outputControllerReadySemaphore->wait();
 
         auto pOutData = (char*)CONSOLE_TX_DATA;
         *pOutData = Riscv::outputQueue.removeFirst();
+        Riscv::outputEmptySemaphore->signal();
 
         Riscv::unlock();
     }

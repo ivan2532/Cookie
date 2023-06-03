@@ -104,10 +104,14 @@ private:
     static constexpr uint64 SYS_CALL_TIME_SLEEP = 0x31;
 
     static CharDeque inputQueue;
-    static SCB* volatile inputSemaphore;
+    static constexpr uint16 INPUT_BUFFER_SIZE = 20;
+    static SCB* volatile inputEmptySemaphore;
+    static SCB* volatile inputFullSemaphore;
 
     static CharDeque outputQueue;
-    static SCB* volatile outputSemaphore;
+    static constexpr uint16 OUTPUT_BUFFER_SIZE = 20;
+    static SCB* volatile outputEmptySemaphore;
+    static SCB* volatile outputFullSemaphore;
     static SCB* volatile outputControllerReadySemaphore;
 
     static char getCharFromInputBuffer();

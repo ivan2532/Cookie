@@ -24,7 +24,7 @@ private:
     static Block* mergeBlocks(Block* parent, Block* child);
 
 private:
-    static Block* freeBlocksList;
+    static volatile Block* volatile freeBlocksList;
 };
 
 #endif // _Memory_Allocator_hpp_
