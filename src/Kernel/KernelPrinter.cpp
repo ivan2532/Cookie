@@ -19,11 +19,16 @@ void KernelPrinter::printInteger(uint64 integer)
 {
     static char digits[] = "0123456789";
     char buf[16];
-    auto i = 0;
-    auto x = integer;
+    int i;
+    uint x;
 
-    do buf[i++] = digits[x % 10];
-    while ((x /= 10) != 0);
+    x = integer;
 
-    while (--i >= 0) Riscv::addCharToOutputBuffer(buf[i]);
+    i = 0;
+    do
+    {
+        buf[i++] = digits[x % 10];
+    } while ((x /= 10) != 0);
+
+    while (--i >= 0) { Riscv::addCharToOutputBuffer(buf[i]); }
 }

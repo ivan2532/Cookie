@@ -76,6 +76,8 @@ Block* MemoryAllocator::mergeBlocks(Block *parent, Block *child)
 
 void* MemoryAllocator::alloc(size_t size)
 {
+    return __mem_alloc(size);
+
     // Can't allocate a block with size 0
     if(size == 0) return nullptr;
 
@@ -99,6 +101,8 @@ void* MemoryAllocator::alloc(size_t size)
 
 int MemoryAllocator::free(void* ptr)
 {
+    return __mem_free(ptr);
+
     if(ptr == nullptr) return 0;
 
     // Get the descriptor of the allocated block

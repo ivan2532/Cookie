@@ -47,7 +47,7 @@ void TCB::bodyWrapper()
     // Continue program execution from here and return from the trap
 
     if(!TCB::running->m_KernelThread) Riscv::returnFromSystemCall();
-    else Riscv::unlock();
+    //else Riscv::unlock();
 
     running->m_Body(running->m_Args);
     running->m_Finished = true;
@@ -150,6 +150,8 @@ int TCB::sleep(uint64 time)
 
 [[noreturn]] void TCB::idleThreadBody(void*)
 {
+    Riscv::unlock();
+
     while(true)
     {
         if(!Scheduler::isEmpty())
@@ -165,15 +167,16 @@ int TCB::sleep(uint64 time)
     while(true)
     {
         Riscv::lock();
-
-        Riscv::outputFullSemaphore->wait();
         Riscv::outputControllerReadySemaphore->wait();
 
-        auto pOutData = (char*)CONSOLE_TX_DATA;
+        // Signal that the controller is ready to print
+        while(*((char*)CONSOLE_STATUS) & CONSOLE_TX_STATUS_BIT)
+        {
+            Riscv::outputFullSemaphore->wait();
+            auto pOutData = (char*)CONSOLE_TX_DATA;
 
-        *pOutData = Riscv::outputQueue.removeFirst();
-        Riscv::outputEmptySemaphore->signal();
-
-        Riscv::unlock();
+            *pOutData = Riscv::outputQueue.removeFirst();
+            Riscv::outputEmptySemaphore->signal();
+        }
     }
 }

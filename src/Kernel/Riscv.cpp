@@ -1,7 +1,6 @@
 #include "../../h/Kernel/Riscv.hpp"
 #include "../../h/Kernel/TCB.hpp"
 #include "../../h/Kernel/SCB.hpp"
-#include "../../lib/console.h"
 
 volatile CharDeque Riscv::inputQueue;
 SCB* volatile Riscv::inputEmptySemaphore;
@@ -29,8 +28,7 @@ void Riscv::handleTimerTrap()
     for(auto it = TCB::allThreads.head; it != nullptr; it = it->next)
     {
         if(it->data->m_SleepCounter == 0) continue;
-
-        if(--(it->data->m_SleepCounter) == 0 && !Scheduler::contains(it->data))
+        if(--(it->data->m_SleepCounter) == 0)
         {
             Scheduler::put(it->data);
         }
@@ -350,7 +348,6 @@ void Riscv::handlePutChar()
     __asm__ volatile ("mv %[outChar], a1" : [outChar] "=r" (outputChar));
 
     addCharToOutputBuffer(outputChar);
-    //__putc(outputChar);
 }
 
 char Riscv::getCharFromInputBuffer()
