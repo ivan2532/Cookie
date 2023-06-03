@@ -19,7 +19,7 @@ inline void startSystemThreads()
     auto idleThreadStack = MemoryAllocator::alloc(DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION);
     TCB::idleThread = TCB::createThread
     (
-        &TCB::idleThreadBody,
+        TCB::idleThreadBody,
         nullptr,
         idleThreadStack,
         true
@@ -40,7 +40,7 @@ inline void startIO()
     auto outputThreadStack = MemoryAllocator::alloc(DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION);
     TCB::outputThread = TCB::createThread
     (
-        &TCB::outputThreadBody,
+        TCB::outputThreadBody,
         nullptr,
         outputThreadStack,
         true
@@ -55,7 +55,7 @@ inline void startUserThread()
 {
     // Create user thread
     auto userThreadStack = MemoryAllocator::alloc(DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION);
-    TCB::userThread = TCB::createThread(&userMainWrapper, nullptr, userThreadStack);
+    TCB::userThread = TCB::createThread(userMainWrapper, nullptr, userThreadStack);
     thread_dispatch();
 
     // Wait for user thread to finish

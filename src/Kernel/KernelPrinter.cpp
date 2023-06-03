@@ -21,12 +21,9 @@ void KernelPrinter::printInteger(uint64 integer)
 
     static char digits[] = "0123456789";
     char buf[16];
-    int i;
-    uint x;
+    auto i = 0;
+    auto x = integer;
 
-    x = integer;
-
-    i = 0;
     do buf[i++] = digits[x % 10];
     while ((x /= 10) != 0);
 

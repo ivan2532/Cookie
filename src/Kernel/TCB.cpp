@@ -13,6 +13,27 @@ TCB* TCB::idleThread = nullptr;
 TCB* TCB::outputThread = nullptr;
 TCB* TCB::userThread = nullptr;
 
+// When creating an initial context, we want ra to point to the body of
+// our thread immediately, and sp will point at the start of the space
+// allocated for the stack
+TCB::TCB(TCB::Body body, void *args, uint64 timeSlice, void *stack, bool kernelThread)
+    :
+    m_Body(body),
+    m_Args(args),
+    m_Stack(stack),
+    m_Context ({
+        (uint64)&bodyWrapper,
+        body == nullptr ? 0 : (uint64)( (char*)stack + (DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION) )
+    }),
+    m_TimeSlice(timeSlice),
+    m_Finished(false),
+    m_SleepCounter(0),
+    m_PutInScheduler(true),
+    m_KernelThread(kernelThread)
+{
+    if(body != nullptr && body != &idleThreadBody) Scheduler::put(this, true);
+}
+
 TCB::~TCB()
 {
     allThreads.remove(this);
@@ -129,7 +150,10 @@ int TCB::sleep(uint64 time)
 
 [[noreturn]] void TCB::idleThreadBody(void*)
 {
-    while(true) thread_dispatch();
+    while(true)
+    {
+        if(!Scheduler::isEmpty()) thread_dispatch();
+    }
 }
 
 [[noreturn]] void TCB::outputThreadBody(void*)

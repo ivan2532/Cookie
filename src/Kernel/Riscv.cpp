@@ -59,13 +59,14 @@ void Riscv::handleExternalTrap()
     {
         auto pStatus = *((char*)CONSOLE_STATUS);
 
-        if((pStatus & CONSOLE_TX_STATUS_BIT) != 0)
+        // Signal that the controller is ready to print
+        if(pStatus & CONSOLE_TX_STATUS_BIT)
         {
             outputControllerReadySemaphore->signal();
         }
 
         // Read from the controller
-        if((pStatus & CONSOLE_RX_STATUS_BIT) != 0)
+        if(pStatus & CONSOLE_RX_STATUS_BIT)
         {
             auto pInData = *((char*)CONSOLE_RX_DATA);
             inputQueue.addLast(pInData);
