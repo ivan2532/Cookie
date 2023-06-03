@@ -8,8 +8,7 @@ void KernelPrinter::printString(char const *string)
 
     while (*string != '\0')
     {
-        Riscv::outputQueue.addLast(*string);
-        Riscv::outputSemaphore->signal();
+        Riscv::addCharToOutputBuffer(*string);
         string++;
     }
 
@@ -28,16 +27,10 @@ void KernelPrinter::printInteger(uint64 integer)
     x = integer;
 
     i = 0;
-    do
-    {
-        buf[i++] = digits[x % 10];
-    } while ((x /= 10) != 0);
+    do buf[i++] = digits[x % 10];
+    while ((x /= 10) != 0);
 
-    while (--i >= 0)
-    {
-        Riscv::outputQueue.addLast(buf[i]);
-        Riscv::outputSemaphore->signal();
-    }
+    while (--i >= 0) Riscv::addCharToOutputBuffer(buf[i]);
 
     Riscv::unlock();
 }

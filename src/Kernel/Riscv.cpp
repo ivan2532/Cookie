@@ -2,8 +2,6 @@
 #include "../../h/Kernel/TCB.hpp"
 #include "../../h/Kernel/SCB.hpp"
 
-volatile uint8 Riscv::nestingCount = 0;
-
 CharDeque Riscv::inputQueue;
 SCB* volatile Riscv::inputSemaphore;
 
@@ -166,12 +164,7 @@ void Riscv::handleSystemCalls()
         case SYS_CALL_TIME_SLEEP:
             handleTimeSleep();
             break;
-        case SYS_CALL_GETC:
-            handleGetChar();
-            break;
-        case SYS_CALL_PUTC:
-            handlePutChar();
-            break;
+
         default: handleUnknownTrapCause(readScause());
     }
 }
@@ -337,22 +330,14 @@ void Riscv::handleTimeSleep()
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
 }
 
-void Riscv::handleGetChar()
+char Riscv::getCharFromInputBuffer()
 {
     Riscv::inputSemaphore->wait();
-    auto returnValue = inputQueue.removeFirst();
-
-    // Store results in A0
-    __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
+    return inputQueue.removeFirst();
 }
 
-void Riscv::handlePutChar()
+void Riscv::addCharToOutputBuffer(char outputChar)
 {
-    char volatile outputChar;
-
-    // Get arguments
-    __asm__ volatile ("mv %[outChar], a1" : [outChar] "=r" (outputChar));
-
     outputQueue.addLast(outputChar);
     outputSemaphore->signal();
 }

@@ -17,6 +17,7 @@ class Riscv
     friend int main();
     friend void startIO();
     friend void startUserThread();
+    friend void putc(char);
     friend char getc();
     friend class KernelPrinter;
 
@@ -82,8 +83,6 @@ private:
     inline static void handleSemaphoreWait();
     inline static void handleSemaphoreSignal();
     inline static void handleTimeSleep();
-    inline static void handleGetChar();
-    inline static void handlePutChar();
 
     static void contextSwitch(bool putOldThreadInSchedule = true);
 
@@ -103,8 +102,6 @@ private:
     static constexpr uint64 SYS_CALL_SEM_WAIT = 0x23;
     static constexpr uint64 SYS_CALL_SEM_SIGNAL = 0x24;
     static constexpr uint64 SYS_CALL_TIME_SLEEP = 0x31;
-    static constexpr uint64 SYS_CALL_GETC = 0x41;
-    static constexpr uint64 SYS_CALL_PUTC = 0x42;
 
     static CharDeque inputQueue;
     static SCB* volatile inputSemaphore;
@@ -113,7 +110,8 @@ private:
     static SCB* volatile outputSemaphore;
     static SCB* volatile outputControllerReadySemaphore;
 
-    static volatile uint8 nestingCount;
+    static char getCharFromInputBuffer();
+    static void addCharToOutputBuffer(char outputChar);
 };
 
 inline uint64 Riscv::readScause()
