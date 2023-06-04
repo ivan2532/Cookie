@@ -12,8 +12,6 @@ class Riscv
     friend int main();
     friend void startIO();
     friend void startUserThread();
-    friend void putc(char);
-    friend char getc();
     friend class KernelPrinter;
 
 public:
