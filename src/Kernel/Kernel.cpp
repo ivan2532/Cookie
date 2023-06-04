@@ -177,7 +177,13 @@ void Kernel::handleEcallTrap()
 
     auto volatile scause = readScause();
     if(scause == SCAUSE_ECALL_FROM_SUPERVISOR_MODE) TCB::dispatch();
-    else handleSystemCalls();
+    else if(scause == SCAUSE_ECALL_FROM_USER_MODE)
+    {
+        uint64 volatile systemCallCode;
+        __asm__ volatile ("mv %[outCode], a0" : [outCode] "=r" (systemCallCode));
+        handleSystemCalls(systemCallCode, scause);
+    }
+    else handleUnknownTrapCause(scause);
 
     // Restore important supervisor registers
     writeSstatus(sstatus);
@@ -186,9 +192,6 @@ void Kernel::handleEcallTrap()
 
 [[noreturn]] void Kernel::handleUnknownTrapCause(uint64 scause)
 {
-    // Clear interrupt pending bit
-    maskClearSip(SIP_SSIP);
-
     KernelPrinter::printString("\nscause: ");
     KernelPrinter::printNumber(scause, 16);
 
@@ -220,16 +223,15 @@ void Kernel::initializeSystemCallHandlers()
     systemCallHandlers[SYS_CALL_PUT_CHAR] = handlePutChar;
 }
 
-void Kernel::handleSystemCalls()
+void Kernel::handleSystemCalls(uint64 systemCallCode, uint64 scause)
 {
-    uint64 volatile sysCallCode;
-    __asm__ volatile ("mv %[outCode], a0" : [outCode] "=r" (sysCallCode));
-
-    if(sysCallCode < 0 || sysCallCode >= SYSTEM_CALL_HANDLERS_SIZE || systemCallHandlers[sysCallCode] == nullptr)
+    if(systemCallCode < 0 ||
+       systemCallCode >= SYSTEM_CALL_HANDLERS_SIZE ||
+       systemCallHandlers[systemCallCode] == nullptr)
     {
-        handleUnknownTrapCause(readScause());
+        handleUnknownTrapCause(scause);
     }
-    else systemCallHandlers[sysCallCode]();
+    else systemCallHandlers[systemCallCode]();
 }
 
 void Kernel::handleMemAlloc()

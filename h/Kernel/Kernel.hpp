@@ -65,6 +65,7 @@ private:
 
     static uint64 oldTrapHandler;
     static void supervisorTrap();
+    static constexpr uint64 SCAUSE_ECALL_FROM_USER_MODE = 0x0000000000000008UL;
     static constexpr uint64 SCAUSE_ECALL_FROM_SUPERVISOR_MODE = 0x0000000000000009UL;
 
     static void handleEcallTrap();
@@ -77,7 +78,7 @@ private:
     static SystemCallHandler systemCallHandlers[];
     static void initializeSystemCallHandlers();
 
-    inline static void handleSystemCalls();
+    inline static void handleSystemCalls(uint64 systemCallCode, uint64 scause);
     inline static void handleMemAlloc();
     inline static void handleMemFree();
     inline static void handleThreadCreate();
