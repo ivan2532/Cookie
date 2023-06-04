@@ -7,7 +7,7 @@
 
 #include "../../lib/hw.h"
 
-#define STACK_CONTEXT_EXTENSION 4096
+#define STACK_CONTEXT_EXTENSION 512
 
     #ifdef __cplusplus
     extern "C"

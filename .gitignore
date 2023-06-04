@@ -7,3 +7,5 @@ kernel.asm
 *.d
 *.lst
 *.o
+
+.gdbinit
