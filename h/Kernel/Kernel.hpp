@@ -73,6 +73,7 @@ private:
     [[noreturn]] inline static void handleUnknownTrapCause(uint64 scause);
 
     typedef void (*SystemCallHandler)();
+    static constexpr size_t SYSTEM_CALL_HANDLERS_SIZE = 0x42 + 1;
     static SystemCallHandler systemCallHandlers[];
     static void initializeSystemCallHandlers();
 

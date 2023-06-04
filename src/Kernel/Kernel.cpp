@@ -4,7 +4,7 @@
 
 uint64 Kernel::oldTrapHandler = 0;
 
-Kernel::SystemCallHandler Kernel::systemCallHandlers[0x42 + 1] = {};
+Kernel::SystemCallHandler Kernel::systemCallHandlers[SYSTEM_CALL_HANDLERS_SIZE] = {};
 
 volatile KernelDeque<char> Kernel::inputQueue;
 SCB* volatile Kernel::inputEmptySemaphore;
@@ -190,15 +190,15 @@ void Kernel::handleEcallTrap()
     maskClearSip(SIP_SSIP);
 
     KernelPrinter::printString("\nscause: ");
-    KernelPrinter::printInteger((int)scause);
+    KernelPrinter::printNumber(scause, 16);
 
     auto volatile sepc = readSepc();
     KernelPrinter::printString("\nsepc: ");
-    KernelPrinter::printInteger((int)sepc);
+    KernelPrinter::printNumber(sepc, 16);
 
     auto volatile stval = readStval();
     KernelPrinter::printString("\nstval: ");
-    KernelPrinter::printInteger((int)stval);
+    KernelPrinter::printNumber(stval, 16);
 
     while(true) TCB::dispatch();
 }
@@ -225,7 +225,10 @@ void Kernel::handleSystemCalls()
     uint64 volatile sysCallCode;
     __asm__ volatile ("mv %[outCode], a0" : [outCode] "=r" (sysCallCode));
 
-    if(!systemCallHandlers[sysCallCode]) handleUnknownTrapCause(readScause());
+    if(sysCallCode < 0 || sysCallCode >= SYSTEM_CALL_HANDLERS_SIZE || systemCallHandlers[sysCallCode] == nullptr)
+    {
+        handleUnknownTrapCause(readScause());
+    }
     else systemCallHandlers[sysCallCode]();
 }
 

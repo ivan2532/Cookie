@@ -7,7 +7,10 @@ class KernelPrinter
 {
 public:
     static void printString(char const *string);
-    static void printInteger(uint64 integer);
+    static void printNumber(uint64 integer, uint8 base = 10);
+
+private:
+    static constexpr char digits[] = "0123456789ABCDEF";
 };
 
 #endif // _Kernel_Printer_hpp_
