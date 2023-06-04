@@ -47,7 +47,6 @@ void TCB::bodyWrapper()
     // Continue program execution from here and return from the trap
 
     if(!TCB::running->m_KernelThread) Riscv::returnFromSystemCall();
-    //else Riscv::unlock();
 
     running->m_Body(running->m_Args);
     running->m_Finished = true;
@@ -175,7 +174,6 @@ int TCB::sleep(uint64 time)
         {
             Riscv::outputFullSemaphore->wait();
             auto pOutData = (char*)CONSOLE_TX_DATA;
-
             *pOutData = Riscv::outputQueue.removeFirst();
             Riscv::outputEmptySemaphore->signal();
         }

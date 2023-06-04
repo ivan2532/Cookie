@@ -70,7 +70,6 @@ void Riscv::handleExternalTrap()
         if(pStatus & CONSOLE_RX_STATUS_BIT)
         {
             auto pInData = *((char*)CONSOLE_RX_DATA);
-
             inputEmptySemaphore->wait();
             inputQueue.addLast(pInData);
             inputFullSemaphore->signal();
