@@ -279,6 +279,7 @@ void Riscv::handleSemaphoreClose()
     // Get arguments
     __asm__ volatile ("mv %[outHandle], a7" : [outHandle] "=r" (handle));
 
+    handle->~SCB();
     auto returnValue = MemoryAllocator::free(handle);
 
     // Store results in A0

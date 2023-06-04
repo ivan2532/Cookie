@@ -79,6 +79,7 @@ int TCB::deleteThread(TCB* handle)
     handle->unblockWaitingThread();
 
     auto handleIsRunning = (running == handle);
+    handle->~TCB();
     MemoryAllocator::free(handle);
 
     // If we are deleting the running thread, change context and don't save old context
