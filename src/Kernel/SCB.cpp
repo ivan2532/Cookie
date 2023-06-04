@@ -10,11 +10,10 @@ SCB::SCB(unsigned startValue, bool binary)
 
 SCB::~SCB()
 {
-    auto current = m_BlockedQueue.removeFirst();
-    while(current != nullptr)
+    while(!m_BlockedQueue.isEmpty())
     {
+        auto current = m_BlockedQueue.removeFirst();
         Scheduler::put(current);
-        current = m_BlockedQueue.removeFirst();
     }
 }
 
