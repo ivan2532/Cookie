@@ -1,7 +1,3 @@
-/*
-    C API wrapper for system calls
-*/
-
 #ifndef _syscall_c_hpp_
 #define _syscall_c_hpp_
 

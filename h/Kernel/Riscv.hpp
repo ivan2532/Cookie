@@ -1,7 +1,3 @@
-//
-// RISC-V utility assembler functions
-//
-
 #ifndef _Riscv_hpp_
 #define _Riscv_hpp_
 
@@ -61,14 +57,21 @@ public:
 
 private:
     static void supervisorTrap();
-    static void pushRegisters();
-    static void popRegisters();
+    static constexpr uint64 SCAUSE_ECALL_FROM_SUPERVISOR_MODE = 0x0000000000000009UL;
 
     static void handleEcallTrap();
     static void handleTimerTrap();
     static void handleExternalTrap();
-
     [[noreturn]] inline static void handleUnknownTrapCause(uint64 scause);
+
+    static void contextSwitch(bool putOldThreadInSchedule = true);
+
+    inline static void lock() { Riscv::maskClearSstatus(Riscv::SSTATUS_SIE); }
+    inline static void unlock() { Riscv::maskSetSstatus(Riscv::SSTATUS_SIE); }
+
+    typedef void (*SystemCallHandler)();
+    static SystemCallHandler systemCallHandlers[];
+    static void initializeSystemCallHandlers();
 
     inline static void handleSystemCalls();
     inline static void handleMemAlloc();
@@ -84,13 +87,6 @@ private:
     inline static void handleTimeSleep();
     inline static void handleGetChar();
     inline static void handlePutChar();
-
-    static void contextSwitch(bool putOldThreadInSchedule = true);
-
-    inline static void lock() { Riscv::maskClearSstatus(Riscv::SSTATUS_SIE); }
-    inline static void unlock() { Riscv::maskSetSstatus(Riscv::SSTATUS_SIE); }
-
-    static constexpr uint64 SCAUSE_ECALL_FROM_SUPERVISOR_MODE = 0x0000000000000009UL;
 
     static constexpr uint64 SYS_CALL_MEM_ALLOC = 0x01;
     static constexpr uint64 SYS_CALL_MEM_FREE = 0x02;

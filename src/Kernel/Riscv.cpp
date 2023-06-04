@@ -2,6 +2,8 @@
 #include "../../h/Kernel/TCB.hpp"
 #include "../../h/Kernel/SCB.hpp"
 
+Riscv::SystemCallHandler Riscv::systemCallHandlers[0x42 + 1] = {};
+
 volatile KernelDeque<char> Riscv::inputQueue;
 SCB* volatile Riscv::inputEmptySemaphore;
 SCB* volatile Riscv::inputFullSemaphore;
@@ -121,55 +123,33 @@ void Riscv::handleEcallTrap()
     while(true) TCB::dispatch();
 }
 
+void Riscv::initializeSystemCallHandlers()
+{
+    systemCallHandlers[SYS_CALL_MEM_ALLOC] = handleMemAlloc;
+    systemCallHandlers[SYS_CALL_MEM_FREE] = handleMemFree;
+    systemCallHandlers[SYS_CALL_THREAD_CREATE] = handleThreadCreate;
+    systemCallHandlers[SYS_CALL_THREAD_EXIT] = handleThreadExit;
+    systemCallHandlers[SYS_CALL_THREAD_DISPATCH] = handleThreadDispatch;
+    systemCallHandlers[SYS_CALL_THREAD_JOIN] = handleThreadJoin;
+    systemCallHandlers[SYS_CALL_SEM_OPEN] = handleSemaphoreOpen;
+    systemCallHandlers[SYS_CALL_SEM_CLOSE] = handleSemaphoreClose;
+    systemCallHandlers[SYS_CALL_SEM_WAIT] = handleSemaphoreWait;
+    systemCallHandlers[SYS_CALL_SEM_SIGNAL] = handleSemaphoreSignal;
+    systemCallHandlers[SYS_CALL_TIME_SLEEP] = handleTimeSleep;
+    systemCallHandlers[SYS_CALL_GET_CHAR] = handleGetChar;
+    systemCallHandlers[SYS_CALL_PUT_CHAR] = handlePutChar;
+}
+
 void Riscv::handleSystemCalls()
 {
     uint64 volatile sysCallCode;
     __asm__ volatile ("mv %[outCode], a0" : [outCode] "=r" (sysCallCode));
 
-    switch (sysCallCode)
+    if(systemCallHandlers[sysCallCode] == nullptr)
     {
-        case SYS_CALL_MEM_ALLOC:
-            handleMemAlloc();
-            break;
-        case SYS_CALL_MEM_FREE:
-            handleMemFree();
-            break;
-        case SYS_CALL_THREAD_CREATE:
-            handleThreadCreate();
-            break;
-        case SYS_CALL_THREAD_EXIT:
-            handleThreadExit();
-            break;
-        case SYS_CALL_THREAD_DISPATCH:
-            handleThreadDispatch();
-            break;
-        case SYS_CALL_THREAD_JOIN:
-            handleThreadJoin();
-            break;
-        case SYS_CALL_SEM_OPEN:
-            handleSemaphoreOpen();
-            break;
-        case SYS_CALL_SEM_CLOSE:
-            handleSemaphoreClose();
-            break;
-        case SYS_CALL_SEM_WAIT:
-            handleSemaphoreWait();
-            break;
-        case SYS_CALL_SEM_SIGNAL:
-            handleSemaphoreSignal();
-            break;
-        case SYS_CALL_TIME_SLEEP:
-            handleTimeSleep();
-            break;
-        case SYS_CALL_GET_CHAR:
-            handleGetChar();
-            break;
-        case SYS_CALL_PUT_CHAR:
-            handlePutChar();
-            break;
-
-        default: handleUnknownTrapCause(readScause());
+        handleUnknownTrapCause(readScause());
     }
+    else systemCallHandlers[sysCallCode]();
 }
 
 void Riscv::handleMemAlloc()
