@@ -2,11 +2,11 @@
 #include "../../h/Kernel/TCB.hpp"
 #include "../../h/Kernel/SCB.hpp"
 
-volatile CharDeque Riscv::inputQueue;
+volatile KernelDeque<char> Riscv::inputQueue;
 SCB* volatile Riscv::inputEmptySemaphore;
 SCB* volatile Riscv::inputFullSemaphore;
 
-volatile CharDeque Riscv::outputQueue;
+volatile KernelDeque<char> Riscv::outputQueue;
 SCB* volatile Riscv::outputEmptySemaphore;
 SCB* volatile Riscv::outputFullSemaphore;
 

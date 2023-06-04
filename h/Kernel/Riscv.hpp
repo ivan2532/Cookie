@@ -8,7 +8,6 @@
 #include "../../lib/hw.h"
 #include "../../h/Kernel/KernelDeque.hpp"
 #include "../../h/Kernel/KernelPrinter.hpp"
-#include "CharDeque.hpp"
 
 class Riscv
 {
@@ -107,12 +106,12 @@ private:
     static constexpr uint64 SYS_CALL_GET_CHAR = 0x41;
     static constexpr uint64 SYS_CALL_PUT_CHAR = 0x42;
 
-    static volatile CharDeque inputQueue;
+    static volatile KernelDeque<char> inputQueue;
     static constexpr uint16 INPUT_BUFFER_SIZE = 100;
     static SCB* volatile inputEmptySemaphore;
     static SCB* volatile inputFullSemaphore;
 
-    static volatile CharDeque outputQueue;
+    static volatile KernelDeque<char> outputQueue;
     static constexpr uint16 OUTPUT_BUFFER_SIZE = 100;
     static SCB* volatile outputEmptySemaphore;
     static SCB* volatile outputFullSemaphore;

@@ -28,7 +28,7 @@ public:
     KernelDeque(const KernelDeque<T>&) = delete;
     KernelDeque<T>& operator=(const KernelDeque<T>&) = delete;
 
-    void addFirst(T data)
+    void addFirst(T data) volatile
     {
         auto newNode = static_cast<Node*>(MemoryAllocator::alloc(sizeof(Node)));
         new (newNode) Node(data, head);
@@ -37,7 +37,7 @@ public:
         if (!tail) tail = head;
     }
 
-    void addLast(T data)
+    void addLast(T data) volatile
     {
         auto newNode = static_cast<Node*>(MemoryAllocator::alloc(sizeof(Node)));
         new (newNode) Node(data, nullptr);
@@ -50,7 +50,7 @@ public:
         else head = tail = newNode;
     }
 
-    T removeFirst()
+    T removeFirst() volatile
     {
         auto nodeToRemove = head;
         head = head->next;
@@ -61,12 +61,12 @@ public:
         return ret;
     }
 
-    T peekFirst() const
+    T peekFirst() const volatile
     {
         return head->data;
     }
 
-    T removeLast()
+    T removeLast() volatile
     {
         Node* prev = nullptr;
         for (auto cur = head; cur && cur != tail; cur = cur->next)
@@ -84,7 +84,7 @@ public:
         return ret;
     }
 
-    int remove(T value)
+    int remove(T value) volatile
     {
         Node* prev = nullptr;
         for (auto cur = head; cur; cur = cur->next)
@@ -112,12 +112,12 @@ public:
         return -1;
     }
 
-    T peekLast() const
+    T peekLast() const volatile
     {
         return tail->data;
     }
 
-    bool contains(T value) const
+    bool contains(T value) const volatile
     {
         for (auto cur = head; cur; cur = cur->next)
         {
@@ -127,7 +127,7 @@ public:
         return false;
     }
 
-    bool isEmpty() const { return head == nullptr; }
+    bool isEmpty() const volatile { return head == nullptr; }
 };
 
 #endif // _Kernel_Deque_hpp_
