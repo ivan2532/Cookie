@@ -8,7 +8,7 @@
 
 #include "../../h/C_API/syscall_c.hpp"
 #include "../../h/Kernel/MemoryAllocator.hpp"
-#include "../../h/Kernel/Riscv.hpp"
+#include "../../h/Kernel/Kernel.hpp"
 
 uint64 systemCall(uint64 systemCallCode, ...)
 {

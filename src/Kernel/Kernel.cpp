@@ -1,27 +1,107 @@
-#include "../../h/Kernel/Riscv.hpp"
+#include "../../h/Kernel/Kernel.hpp"
 #include "../../h/Kernel/TCB.hpp"
 #include "../../h/Kernel/SCB.hpp"
 
-Riscv::SystemCallHandler Riscv::systemCallHandlers[0x42 + 1] = {};
+uint64 Kernel::oldTrapHandler = 0;
 
-volatile KernelDeque<char> Riscv::inputQueue;
-SCB* volatile Riscv::inputEmptySemaphore;
-SCB* volatile Riscv::inputFullSemaphore;
+Kernel::SystemCallHandler Kernel::systemCallHandlers[0x42 + 1] = {};
 
-volatile KernelDeque<char> Riscv::outputQueue;
-SCB* volatile Riscv::outputEmptySemaphore;
-SCB* volatile Riscv::outputFullSemaphore;
+volatile KernelDeque<char> Kernel::inputQueue;
+SCB* volatile Kernel::inputEmptySemaphore;
+SCB* volatile Kernel::inputFullSemaphore;
 
-SCB* volatile Riscv::outputControllerReadySemaphore;
+volatile KernelDeque<char> Kernel::outputQueue;
+SCB* volatile Kernel::outputEmptySemaphore;
+SCB* volatile Kernel::outputFullSemaphore;
 
-void Riscv::returnFromSystemCall()
+SCB* volatile Kernel::outputControllerReadySemaphore;
+
+void Kernel::initialize()
+{
+    initializeSystemCallHandlers();
+
+    oldTrapHandler = readStvec();
+    writeStvec((uint64)&supervisorTrap + 1);
+
+    initializeSystemThreads();
+    initializeIO();
+    initializeUserThread();
+}
+
+void Kernel::initializeSystemThreads()
+{
+    // When we create the main thread (specific case when body = nullptr) we don't put it in the Scheduler,
+    // it will gain it's returning context once it gives the processor to another thread
+    TCB::mainThread = TCB::createThread(nullptr, nullptr, nullptr, true);
+
+    // Create idle thread
+    auto idleThreadStack = MemoryAllocator::alloc(DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION);
+    TCB::idleThread = TCB::createThread
+    (
+        TCB::idleThreadBody,
+        nullptr,
+        idleThreadStack,
+        true
+    );
+}
+
+void Kernel::initializeIO()
+{
+    inputEmptySemaphore = static_cast<SCB*>(MemoryAllocator::alloc(sizeof(SCB)));
+    inputFullSemaphore = static_cast<SCB*>(MemoryAllocator::alloc(sizeof(SCB)));
+    outputEmptySemaphore = static_cast<SCB*>(MemoryAllocator::alloc(sizeof(SCB)));
+    outputFullSemaphore = static_cast<SCB*>(MemoryAllocator::alloc(sizeof(SCB)));
+    outputControllerReadySemaphore = static_cast<SCB*>(MemoryAllocator::alloc(sizeof(SCB)));
+
+    new (inputEmptySemaphore) volatile SCB(INPUT_BUFFER_SIZE);
+    new (inputFullSemaphore) volatile SCB(0);
+    new (outputEmptySemaphore) volatile SCB(OUTPUT_BUFFER_SIZE);
+    new (outputFullSemaphore) volatile SCB(0);
+    new (outputControllerReadySemaphore) volatile SCB(0, true);
+
+    // Create io thread
+    auto outputThreadStack = MemoryAllocator::alloc(DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION);
+    TCB::outputThread = TCB::createThread
+    (
+        TCB::outputThreadBody,
+        nullptr,
+        outputThreadStack,
+        true
+    );
+
+    // Enable interrupts
+    maskSetSstatus(SSTATUS_SIE);
+    thread_dispatch();
+}
+
+void Kernel::initializeUserThread()
+{
+    extern void userMain();
+
+    auto userThreadStack = MemoryAllocator::alloc(DEFAULT_STACK_SIZE + STACK_CONTEXT_EXTENSION);
+    TCB::userThread = TCB::createThread([](void*) { userMain(); }, nullptr, userThreadStack);
+    thread_dispatch();
+
+    // Wait for user thread to finish
+    TCB::running->waitForThread(TCB::userThread);
+}
+
+void Kernel::dispose()
+{
+    delete TCB::mainThread;
+    delete TCB::idleThread;
+    delete TCB::outputThread;
+    writeStvec(oldTrapHandler);
+}
+
+void Kernel::returnFromSystemCall()
 {
     maskClearSstatus(SSTATUS_SPP);
     __asm__ volatile ("csrw sepc, ra");
     __asm__ volatile ("sret");
 }
 
-void Riscv::handleTimerTrap()
+void Kernel::handleTimerTrap()
 {
     // Clear interrupt pending bit
     maskClearSip(SIP_SSIP);
@@ -51,7 +131,7 @@ void Riscv::handleTimerTrap()
     }
 }
 
-void Riscv::handleExternalTrap()
+void Kernel::handleExternalTrap()
 {
     // Clear interrupt pending bit
     maskClearSip(SIP_SSIP);
@@ -82,7 +162,7 @@ void Riscv::handleExternalTrap()
     plic_complete(interruptId);
 }
 
-void Riscv::handleEcallTrap()
+void Kernel::handleEcallTrap()
 {
     // Clear interrupt pending bit
     maskClearSip(SIP_SSIP);
@@ -104,7 +184,7 @@ void Riscv::handleEcallTrap()
     writeSepc(sepc);
 }
 
-[[noreturn]] void Riscv::handleUnknownTrapCause(uint64 scause)
+[[noreturn]] void Kernel::handleUnknownTrapCause(uint64 scause)
 {
     // Clear interrupt pending bit
     maskClearSip(SIP_SSIP);
@@ -123,7 +203,7 @@ void Riscv::handleEcallTrap()
     while(true) TCB::dispatch();
 }
 
-void Riscv::initializeSystemCallHandlers()
+void Kernel::initializeSystemCallHandlers()
 {
     systemCallHandlers[SYS_CALL_MEM_ALLOC] = handleMemAlloc;
     systemCallHandlers[SYS_CALL_MEM_FREE] = handleMemFree;
@@ -140,7 +220,7 @@ void Riscv::initializeSystemCallHandlers()
     systemCallHandlers[SYS_CALL_PUT_CHAR] = handlePutChar;
 }
 
-void Riscv::handleSystemCalls()
+void Kernel::handleSystemCalls()
 {
     uint64 volatile sysCallCode;
     __asm__ volatile ("mv %[outCode], a0" : [outCode] "=r" (sysCallCode));
@@ -149,7 +229,7 @@ void Riscv::handleSystemCalls()
     else systemCallHandlers[sysCallCode]();
 }
 
-void Riscv::handleMemAlloc()
+void Kernel::handleMemAlloc()
 {
     // Get arguments
     size_t volatile sizeArg;
@@ -161,7 +241,7 @@ void Riscv::handleMemAlloc()
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
 }
 
-void Riscv::handleMemFree()
+void Kernel::handleMemFree()
 {
     void* volatile ptrArg;
 
@@ -174,7 +254,7 @@ void Riscv::handleMemFree()
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
 }
 
-void Riscv::handleThreadCreate()
+void Kernel::handleThreadCreate()
 {
     TCB::Body volatile routine;
     void* volatile args;
@@ -201,7 +281,7 @@ void Riscv::handleThreadCreate()
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
 }
 
-void Riscv::handleThreadExit()
+void Kernel::handleThreadExit()
 {
     auto returnValue = TCB::deleteThread(TCB::running);
 
@@ -209,12 +289,12 @@ void Riscv::handleThreadExit()
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
 }
 
-void Riscv::handleThreadDispatch()
+void Kernel::handleThreadDispatch()
 {
     TCB::dispatch();
 }
 
-void Riscv::handleThreadJoin()
+void Kernel::handleThreadJoin()
 {
     TCB* volatile handle;
 
@@ -224,7 +304,7 @@ void Riscv::handleThreadJoin()
     TCB::running->waitForThread(handle);
 }
 
-void Riscv::handleSemaphoreOpen()
+void Kernel::handleSemaphoreOpen()
 {
     // Save handle to A7, it will be overwritten by alloc
     __asm__ volatile ("mv a7, a1");
@@ -246,7 +326,7 @@ void Riscv::handleSemaphoreOpen()
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
 }
 
-void Riscv::handleSemaphoreClose()
+void Kernel::handleSemaphoreClose()
 {
     // Move handle to A7, it can be overwritten by signal()
     __asm__ volatile ("mv a7, a1");
@@ -263,7 +343,7 @@ void Riscv::handleSemaphoreClose()
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
 }
 
-void Riscv::handleSemaphoreWait()
+void Kernel::handleSemaphoreWait()
 {
     // Move id to A7, it can be overwritten by signal()
     __asm__ volatile ("mv a7, a1");
@@ -280,7 +360,7 @@ void Riscv::handleSemaphoreWait()
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
 }
 
-void Riscv::handleSemaphoreSignal()
+void Kernel::handleSemaphoreSignal()
 {
     // Move id to A7, it can be overwritten by signal()
     __asm__ volatile ("mv a7, a1");
@@ -297,7 +377,7 @@ void Riscv::handleSemaphoreSignal()
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
 }
 
-void Riscv::handleTimeSleep()
+void Kernel::handleTimeSleep()
 {
     time_t volatile time;
 
@@ -310,7 +390,7 @@ void Riscv::handleTimeSleep()
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
 }
 
-void Riscv::handleGetChar()
+void Kernel::handleGetChar()
 {
     auto returnValue = getCharFromInputBuffer();
 
@@ -318,7 +398,7 @@ void Riscv::handleGetChar()
     __asm__ volatile ("mv a0, %[inReturnValue]" : : [inReturnValue] "r" (returnValue));
 }
 
-void Riscv::handlePutChar()
+void Kernel::handlePutChar()
 {
     char volatile outputChar;
 
@@ -328,16 +408,16 @@ void Riscv::handlePutChar()
     addCharToOutputBuffer(outputChar);
 }
 
-char Riscv::getCharFromInputBuffer()
+char Kernel::getCharFromInputBuffer()
 {
-    Riscv::inputFullSemaphore->wait();
+    Kernel::inputFullSemaphore->wait();
     auto inputChar = inputQueue.removeFirst();
-    Riscv::inputEmptySemaphore->signal();
+    Kernel::inputEmptySemaphore->signal();
 
     return inputChar;
 }
 
-void Riscv::addCharToOutputBuffer(char outputChar)
+void Kernel::addCharToOutputBuffer(char outputChar)
 {
     outputEmptySemaphore->wait();
     outputQueue.addLast(outputChar);

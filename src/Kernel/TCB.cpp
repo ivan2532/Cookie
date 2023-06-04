@@ -1,5 +1,5 @@
 #include "../../h/Kernel/TCB.hpp"
-#include "../../h/Kernel/Riscv.hpp"
+#include "../../h/Kernel/Kernel.hpp"
 #include "../../h/Kernel/SCB.hpp"
 
 KernelDeque<TCB*> TCB::allThreads;
@@ -46,7 +46,7 @@ void TCB::bodyWrapper()
     // The thread is created and should start from here, we are still in the supervisor regime
     // Continue program execution from here and return from the trap
 
-    if(!TCB::running->m_KernelThread) Riscv::returnFromSystemCall();
+    if(!TCB::running->m_KernelThread) Kernel::returnFromSystemCall();
 
     running->m_Body(running->m_Args);
     running->m_Finished = true;
@@ -150,7 +150,7 @@ int TCB::sleep(uint64 time)
 
 [[noreturn]] void TCB::idleThreadBody(void*)
 {
-    Riscv::unlock();
+    Kernel::unlock();
 
     while(true)
     {
@@ -166,16 +166,16 @@ int TCB::sleep(uint64 time)
 {
     while(true)
     {
-        Riscv::lock();
-        Riscv::outputControllerReadySemaphore->wait();
+        Kernel::lock();
+        Kernel::outputControllerReadySemaphore->wait();
 
         // Signal that the controller is ready to print
         while(*((char*)CONSOLE_STATUS) & CONSOLE_TX_STATUS_BIT)
         {
-            Riscv::outputFullSemaphore->wait();
+            Kernel::outputFullSemaphore->wait();
             auto pOutData = (char*)CONSOLE_TX_DATA;
-            *pOutData = Riscv::outputQueue.removeFirst();
-            Riscv::outputEmptySemaphore->signal();
+            *pOutData = Kernel::outputQueue.removeFirst();
+            Kernel::outputEmptySemaphore->signal();
         }
     }
 }

@@ -6,13 +6,8 @@
 
 class TCB
 {
-    friend class Riscv;
+    friend class Kernel;
     friend class SCB;
-
-    friend int main();
-    friend void startSystemThreads();
-    friend void startIO();
-    friend void startUserThread();
     friend void PeriodicThread::terminate();
 
 public:

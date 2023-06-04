@@ -1,20 +1,19 @@
-#ifndef _Riscv_hpp_
-#define _Riscv_hpp_
+#ifndef _Kernel_hpp_
+#define _Kernel_hpp_
 
 #include "../../lib/hw.h"
 #include "../../h/Kernel/KernelDeque.hpp"
 #include "../../h/Kernel/KernelPrinter.hpp"
 
-class Riscv
+class Kernel
 {
     friend class TCB;
     friend class SCB;
-    friend int main();
-    friend void startIO();
-    friend void startUserThread();
-    friend class KernelPrinter;
 
 public:
+    static void initialize();
+    static void dispose();
+
     static void returnFromSystemCall();
 
     static uint64 readScause();
@@ -53,7 +52,18 @@ public:
     static uint64 readSstatus();
     static void writeSstatus(uint64 sstatus);
 
+    inline static void lock() { Kernel::maskClearSstatus(Kernel::SSTATUS_SIE); }
+    inline static void unlock() { Kernel::maskSetSstatus(Kernel::SSTATUS_SIE); }
+
+    static char getCharFromInputBuffer();
+    static void addCharToOutputBuffer(char outputChar);
+
 private:
+    static void initializeSystemThreads();
+    static void initializeIO();
+    static void initializeUserThread();
+
+    static uint64 oldTrapHandler;
     static void supervisorTrap();
     static constexpr uint64 SCAUSE_ECALL_FROM_SUPERVISOR_MODE = 0x0000000000000009UL;
 
@@ -61,11 +71,6 @@ private:
     static void handleTimerTrap();
     static void handleExternalTrap();
     [[noreturn]] inline static void handleUnknownTrapCause(uint64 scause);
-
-    static void contextSwitch(bool putOldThreadInSchedule = true);
-
-    inline static void lock() { Riscv::maskClearSstatus(Riscv::SSTATUS_SIE); }
-    inline static void unlock() { Riscv::maskSetSstatus(Riscv::SSTATUS_SIE); }
 
     typedef void (*SystemCallHandler)();
     static SystemCallHandler systemCallHandlers[];
@@ -111,101 +116,98 @@ private:
     static SCB* volatile outputFullSemaphore;
 
     static SCB* volatile outputControllerReadySemaphore;
-
-    static char getCharFromInputBuffer();
-    static void addCharToOutputBuffer(char outputChar);
 };
 
-inline uint64 Riscv::readScause()
+inline uint64 Kernel::readScause()
 {
     uint64 volatile scause;
     __asm__ volatile ("csrr %[scause], scause" : [scause] "=r"(scause));
     return scause;
 }
 
-inline void Riscv::writeScause(uint64 scause)
+inline void Kernel::writeScause(uint64 scause)
 {
     __asm__ volatile ("csrw scause, %[scause]" : : [scause] "r"(scause));
 }
 
-inline uint64 Riscv::readSepc()
+inline uint64 Kernel::readSepc()
 {
     uint64 volatile sepc;
     __asm__ volatile ("csrr %[sepc], sepc" : [sepc] "=r"(sepc));
     return sepc;
 }
 
-inline void Riscv::writeSepc(uint64 sepc)
+inline void Kernel::writeSepc(uint64 sepc)
 {
     __asm__ volatile ("csrw sepc, %[sepc]" : : [sepc] "r"(sepc));
 }
 
-inline uint64 Riscv::readStvec()
+inline uint64 Kernel::readStvec()
 {
     uint64 volatile stvec;
     __asm__ volatile ("csrr %[stvec], stvec" : [stvec] "=r"(stvec));
     return stvec;
 }
 
-inline void Riscv::writeStvec(uint64 stvec)
+inline void Kernel::writeStvec(uint64 stvec)
 {
     __asm__ volatile ("csrw stvec, %[stvec]" : : [stvec] "r"(stvec));
 }
 
-inline uint64 Riscv::readStval()
+inline uint64 Kernel::readStval()
 {
     uint64 volatile stval;
     __asm__ volatile ("csrr %[stval], stval" : [stval] "=r"(stval));
     return stval;
 }
 
-inline void Riscv::writeStval(uint64 stval)
+inline void Kernel::writeStval(uint64 stval)
 {
     __asm__ volatile ("csrw stval, %[stval]" : : [stval] "r"(stval));
 }
 
-inline void Riscv::maskSetSip(uint64 mask)
+inline void Kernel::maskSetSip(uint64 mask)
 {
     __asm__ volatile ("csrs sip, %[mask]" : : [mask] "r"(mask));
 }
 
-inline void Riscv::maskClearSip(uint64 mask)
+inline void Kernel::maskClearSip(uint64 mask)
 {
     __asm__ volatile ("csrc sip, %[mask]" : : [mask] "r"(mask));
 }
 
-inline uint64 Riscv::readSip()
+inline uint64 Kernel::readSip()
 {
     uint64 volatile sip;
     __asm__ volatile ("csrr %[sip], sip" : [sip] "=r"(sip));
     return sip;
 }
 
-inline void Riscv::writeSip(uint64 sip)
+inline void Kernel::writeSip(uint64 sip)
 {
     __asm__ volatile ("csrw sip, %[sip]" : : [sip] "r"(sip));
 }
 
-inline void Riscv::maskSetSstatus(uint64 mask)
+inline void Kernel::maskSetSstatus(uint64 mask)
 {
     __asm__ volatile ("csrs sstatus, %[mask]" : : [mask] "r"(mask));
 }
 
-inline void Riscv::maskClearSstatus(uint64 mask)
+inline void Kernel::maskClearSstatus(uint64 mask)
 {
     __asm__ volatile ("csrc sstatus, %[mask]" : : [mask] "r"(mask));
 }
 
-inline uint64 Riscv::readSstatus()
+inline uint64 Kernel::readSstatus()
 {
     uint64 volatile sstatus;
     __asm__ volatile ("csrr %[sstatus], sstatus" : [sstatus] "=r"(sstatus));
     return sstatus;
 }
 
-inline void Riscv::writeSstatus(uint64 sstatus)
+inline void Kernel::writeSstatus(uint64 sstatus)
 {
     __asm__ volatile ("csrw sstatus, %[sstatus]" : : [sstatus] "r"(sstatus));
 }
 
-#endif //_Riscv_hpp_
+#endif //_Kernel_hpp_

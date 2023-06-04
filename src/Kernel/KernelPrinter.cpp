@@ -1,18 +1,18 @@
 #include "../../h/Kernel/KernelPrinter.hpp"
-#include "../../h/Kernel/Riscv.hpp"
+#include "../../h/Kernel/Kernel.hpp"
 #include "../../h/Kernel/SCB.hpp"
 
 void KernelPrinter::printString(char const *string)
 {
-    Riscv::lock();
+    Kernel::lock();
 
     while (*string != '\0')
     {
-        Riscv::addCharToOutputBuffer(*string);
+        Kernel::addCharToOutputBuffer(*string);
         string++;
     }
 
-    Riscv::unlock();
+    Kernel::unlock();
 }
 
 void KernelPrinter::printInteger(uint64 integer)
@@ -30,5 +30,5 @@ void KernelPrinter::printInteger(uint64 integer)
         buf[i++] = digits[x % 10];
     } while ((x /= 10) != 0);
 
-    while (--i >= 0) { Riscv::addCharToOutputBuffer(buf[i]); }
+    while (--i >= 0) { Kernel::addCharToOutputBuffer(buf[i]); }
 }

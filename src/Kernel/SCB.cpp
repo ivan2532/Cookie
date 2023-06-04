@@ -1,5 +1,5 @@
 #include "../../h/Kernel/SCB.hpp"
-#include "../../h/Kernel/Riscv.hpp"
+#include "../../h/Kernel/Kernel.hpp"
 
 SCB::SCB(unsigned startValue, bool binary)
     :
