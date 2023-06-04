@@ -145,10 +145,7 @@ void Riscv::handleSystemCalls()
     uint64 volatile sysCallCode;
     __asm__ volatile ("mv %[outCode], a0" : [outCode] "=r" (sysCallCode));
 
-    if(systemCallHandlers[sysCallCode] == nullptr)
-    {
-        handleUnknownTrapCause(readScause());
-    }
+    if(!systemCallHandlers[sysCallCode]) handleUnknownTrapCause(readScause());
     else systemCallHandlers[sysCallCode]();
 }
 
